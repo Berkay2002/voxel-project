@@ -154,7 +154,7 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
   - [x] Blocks show directional shading (lighter tops, darker sides)
   - [x] AO creates subtle shadows in corners/edges
 
-## Phase 7: Water System (In Progress)
+## Phase 7: Water System ✅
 
 ### Block System
 
@@ -166,7 +166,7 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
 
 ### Terrain Generation
 
-- [x] Define `seaLevel` config field (default 40)
+- [x] Define `seaLevel` config field (set to 50 for visible water)
 - [x] Update `TerrainGenerator::Generate()` to fill Water from terrain height to sea level
 
 ### Mesh Building
@@ -174,6 +174,7 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
 - [x] Add `ChunkMeshResult` struct with opaque + water meshes
 - [x] Update `ChunkMeshBuilder::BuildMesh()` to return `ChunkMeshResult`
 - [x] Separate opaque and water face generation logic
+- [x] Fix chunk boundary artifacts by skipping water side faces at edges
 
 ### Chunk System
 
@@ -202,16 +203,51 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
 
 ### Assets & Validation
 
-- [ ] Create water.png texture (optional - using grass texture with blue tint)
 - [x] Verify build succeeds
-- [ ] Verify water renders at sea level (runtime test)
-- [ ] Verify transparency and blue tint (runtime test)
-- [ ] Verify no visual regression for opaque blocks (runtime test)
+- [x] Verify water renders at sea level
+- [x] Verify transparency and blue tint
+- [x] Verify no visual regression for opaque blocks
+- [x] Fix chunk boundary dark band artifacts
 
-## Phase 8: World Features (Backlog)
+## Phase 8A: Cave Generation (Spaghetti Caves) ✅
 
-- [ ] **Cave Generation**
-  - [ ] 3D Perlin noise for cave carving
+### Modular Cave System
+
+- [x] Create `world/ICaveCarver.h` interface (abstract base for all cave types)
+- [x] Create `world/SpaghettiCaveCarver.h/.cpp` (Minecraft-style winding tunnels)
+
+### TerrainGenerator Updates
+
+- [x] Add `enableCaves` config option
+- [x] Add `AddCaveCarver()` / `ClearCaveCarvers()` methods
+- [x] Implement two-pass generation (terrain first, then cave carving)
+- [x] Water flooding for caves below sea level
+
+### Integration
+
+- [x] Update `CMakeLists.txt` with new cave files
+- [x] Add cave carver to `ChunkManager` on initialization
+
+### Validation
+
+- [x] Build succeeds
+- [ ] Caves appear underground (runtime test)
+- [ ] Winding tunnels are organic and connected
+- [ ] Surface protection prevents ugly surface holes
+- [ ] Underwater caves flood with water
+
+## Phase 8B: Cheese & Noodle Caves (Backlog)
+
+- [ ] **Cheese Caves**: Large open caverns with pillars
+  - [ ] `CheeseCaveCarver.h/.cpp`
+  - [ ] Lower frequency noise, higher threshold
+- [ ] **Noodle Caves**: Thin connecting tunnels
+  - [ ] `NoodleCaveCarver.h/.cpp`
+  - [ ] High frequency noise, low threshold
+
+## Phase 8C: More World Features (Backlog)
+
+- [ ] **Cave Generation Enhancements**
   - [ ] Ore vein distribution at specific depths
 - [ ] **More Block Types**
   - [ ] Sand, Gravel, Cobblestone

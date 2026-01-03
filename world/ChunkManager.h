@@ -3,6 +3,7 @@
 #include "Chunk.h"
 #include "ChunkTask.h"
 #include "TerrainGenerator.h"
+#include "WorldConfig.h"
 #include <unordered_map>
 #include <memory>
 #include <queue>
@@ -90,15 +91,15 @@ private:
     std::queue<ChunkMeshData> m_PendingMeshes;
     std::mutex m_PendingMeshMutex;
 
-    // Load/unload configuration
-    int m_LoadRadius = 6;      // Chunks to load around player (13x13 grid with radius 6)
-    int m_UnloadRadius = 8;    // Chunks beyond this are unloaded (hysteresis)
+    // Load/unload configuration (values from WorldConfig.h)
+    int m_LoadRadius = Config::CHUNK_LOAD_RADIUS;
+    int m_UnloadRadius = Config::CHUNK_UNLOAD_RADIUS;
 
     // Current center chunk (to detect when player moves to new chunk)
     ChunkCoord m_CenterChunk = {0, 0};
 
     // Rate limiting for mesh uploads
-    static constexpr int MAX_UPLOADS_PER_FRAME = 2;
+    static constexpr int MAX_UPLOADS_PER_FRAME = Config::MAX_MESH_UPLOADS_PER_FRAME;
 };
 
 } // namespace Voxel

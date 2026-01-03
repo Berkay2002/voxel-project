@@ -1,4 +1,5 @@
 #include "ChunkManager.h"
+#include "SpaghettiCaveCarver.h"
 #include "core/Shader.h"
 #include "core/Camera.h"
 #include "core/Frustum.h"
@@ -9,16 +10,16 @@
 namespace Voxel {
 
 ChunkManager::ChunkManager() {
-    // Configure terrain generator with default settings
-    TerrainConfig config;
-    config.seed = 12345;
-    config.frequency = 0.02f;
-    config.baseHeight = 64;
-    config.amplitude = 20;
-    m_TerrainGenerator.SetConfig(config);
+    // TerrainConfig defaults are now set from WorldConfig.h
+    // Just use default config - all values come from centralized WorldConfig.h
+    m_TerrainGenerator.SetConfig(TerrainConfig{});
+    
+    // Add spaghetti cave carver for Minecraft-style winding tunnels
+    m_TerrainGenerator.AddCaveCarver(std::make_unique<SpaghettiCaveCarver>());
     
     LOG_INFO("ChunkManager initialized with load radius " + std::to_string(m_LoadRadius) +
-             ", thread pool size: " + std::to_string(m_ThreadPool.get_thread_count()));
+             ", thread pool size: " + std::to_string(m_ThreadPool.get_thread_count()) +
+             ", caves enabled with " + std::to_string(m_TerrainGenerator.GetCaveCarverCount()) + " carver(s)");
 }
 
 ChunkManager::~ChunkManager() {

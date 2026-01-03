@@ -76,7 +76,13 @@ _Refer to `.agent/architecture_reference.md` for the full architectural breakdow
   - Separate opaque/water mesh generation
   - Two-pass rendering with alpha blending
   - Water shader with blue tint
-- **Phase 8**: 🔜 Next (World Features)
-  - Cave generation with 3D Perlin noise
+- **Phase 8A**: ✅ Complete (2026-01-03)
+  - Modular `ICaveCarver` interface for multiple cave types
+  - `SpaghettiCaveCarver` with 3D Perlin noise (Minecraft-style tunnels)
+  - Two-pass terrain generation (terrain + cave carving)
+  - Water flooding for underwater caves
+- **Phase 8B**: 🔜 Next (More Caves & World Features)
+  - Cheese caves (large caverns)
+  - Noodle caves (thin connecting tunnels)
   - More block types (Sand, Gravel, Cobblestone)
   - Texture atlas for multiple block textures

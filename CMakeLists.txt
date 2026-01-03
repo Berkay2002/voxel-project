@@ -93,6 +93,7 @@ add_executable(${PROJECT_NAME}
     world/ChunkMeshBuilder.cpp
     world/TerrainGenerator.cpp
     world/ChunkManager.cpp
+    world/SpaghettiCaveCarver.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE

@@ -7,6 +7,7 @@
 
 // Voxel system
 #include "world/ChunkManager.h"
+#include "world/SpaghettiCaveCarver.h"
 
 #include <glad/gl.h>
 #define GLFW_INCLUDE_NONE
@@ -53,8 +54,8 @@ Engine::Engine() {
   glCullFace(GL_BACK);
   glFrontFace(GL_CCW);
 
-  // Create camera - position it to view the terrain (height ~64 blocks)
-  m_Camera = std::make_unique<Camera>(glm::vec3(8.0f, 80.0f, 40.0f));
+  // Create camera - position it to view the terrain (lower for cave visibility)
+  m_Camera = std::make_unique<Camera>(glm::vec3(8.0f, 60.0f, 40.0f));
 
   // Setup world rendering
   SetupWorld();
