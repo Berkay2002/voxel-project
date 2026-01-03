@@ -40,29 +40,37 @@ bool SpaghettiCaveCarver::ShouldCarve(int worldX, int worldY, int worldZ,
         return false;
     }
     
-    // Don't carve near surface (protect top layers from holes)
+    // Don't carve near surface (protect top layers from holes) - Minecraft uses ~4 blocks
     if (worldY >= terrainHeight - m_Config.surfaceProtection) {
         return false;
     }
     
     // Don't carve if this column is underwater (avoid carving ocean floor)
-    // This prevents weird underwater terrain artifacts
     if (terrainHeight < seaLevel) {
         return false;
     }
     
+    // Altitude-based cave reduction (Minecraft-like)
+    // Caves become rarer/thinner at higher elevations
+    float altitudeThreshold = m_Config.threshold;
+    if (worldY > Config::CAVE_FADE_START_Y) {
+        // Linearly reduce threshold from FADE_START_Y to FADE_END_Y
+        float fadeProgress = static_cast<float>(worldY - Config::CAVE_FADE_START_Y) 
+                           / static_cast<float>(Config::CAVE_FADE_END_Y - Config::CAVE_FADE_START_Y);
+        fadeProgress = std::min(fadeProgress, 1.0f);
+        // Reduce threshold = narrower caves, eventually to 0 = no caves
+        altitudeThreshold *= (1.0f - fadeProgress);
+    }
+    
     // Sample 3D Perlin noise with Y squashing for horizontal stretch
-    // Multiplying Y by ySquash (1.5) makes caves wider than tall
     float nx = static_cast<float>(worldX);
     float ny = static_cast<float>(worldY) * m_Config.ySquash;
     float nz = static_cast<float>(worldZ);
     
     float noiseValue = s_CaveNoise.GetNoise(nx, ny, nz);
     
-    // Carve if noise value is close to zero
-    // This creates tube-like tunnels along the "zero isosurface"
-    // Lower threshold = thinner tunnels, higher = wider caves
-    return std::abs(noiseValue) < m_Config.threshold;
+    // Carve if noise value is close to zero (using altitude-adjusted threshold)
+    return std::abs(noiseValue) < altitudeThreshold;
 }
 
 } // namespace Voxel

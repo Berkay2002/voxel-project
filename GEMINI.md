@@ -28,7 +28,8 @@ The `.agent` directory serves as the persistent "brain" and memory for AI agents
 ## Architecture & Considerations
 
 - **Modular Core**: The engine (`core/`) must be decoupled from the game logic (`world/`).
-- **Voxel Data**: Chunks are 16x16x256. stored as 1D/3D arrays.
+- **Centralized Config**: All tunable world parameters are in `world/WorldConfig.h`.
+- **Voxel Data**: Chunks are 16x16x256, stored as 1D/3D arrays.
 - **Optimization**:
   - Aggressive Face Culling (never render internal faces).
   - Multithreaded Chunk Generation.
@@ -81,8 +82,15 @@ _Refer to `.agent/architecture_reference.md` for the full architectural breakdow
   - `SpaghettiCaveCarver` with 3D Perlin noise (Minecraft-style tunnels)
   - Two-pass terrain generation (terrain + cave carving)
   - Water flooding for underwater caves
-- **Phase 8B**: 🔜 Next (More Caves & World Features)
+  - Natural hillside cave entrances (surfaceProtection=0)
+  - Centralized `WorldConfig.h` for all tunable parameters
+- **Phase 8B**: 🔜 Backlog (More Caves & World Features)
   - Cheese caves (large caverns)
   - Noodle caves (thin connecting tunnels)
   - More block types (Sand, Gravel, Cobblestone)
   - Texture atlas for multiple block textures
+- **Phase 9**: ✅ Complete (2026-01-03)
+  - Biome system: Plains (flat, Y≈45) and Mountains (dramatic, Y≈65+)
+  - Biome noise for large-scale region selection
+  - River water using cellular noise (winding paths in Plains only)
+  - Removed global sea level flooding

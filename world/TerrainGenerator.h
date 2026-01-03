@@ -3,6 +3,7 @@
 #include "Chunk.h"
 #include "ICaveCarver.h"
 #include "WorldConfig.h"
+#include "Biome.h"
 #include <cstdint>
 #include <vector>
 #include <memory>
@@ -18,6 +19,7 @@ struct TerrainConfig {
     int amplitude = Config::TERRAIN_AMPLITUDE;
     int seaLevel = Config::SEA_LEVEL;
     bool enableCaves = Config::ENABLE_CAVES;
+    bool enableRivers = Config::ENABLE_RIVERS;
 };
 
 class TerrainGenerator {
@@ -41,6 +43,15 @@ public:
 private:
     // Calculate terrain height at world position (x, z)
     int GetHeightAt(int worldX, int worldZ) const;
+    
+    // Determine biome at world position (uses low-frequency noise)
+    BiomeType GetBiomeAt(int worldX, int worldZ) const;
+    
+    // Check if a position is part of a river
+    bool IsRiver(int worldX, int worldZ) const;
+    
+    // Get river depth at position (0 if not a river)
+    int GetRiverDepth(int worldX, int worldZ) const;
 
     // Carve caves into the chunk using registered carvers
     void CarveCaves(Chunk& chunk, const std::vector<int>& heightMap);
@@ -50,3 +61,4 @@ private:
 };
 
 } // namespace Voxel
+

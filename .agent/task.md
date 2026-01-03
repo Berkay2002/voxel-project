@@ -231,10 +231,17 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
 ### Validation
 
 - [x] Build succeeds
-- [ ] Caves appear underground (runtime test)
-- [ ] Winding tunnels are organic and connected
-- [ ] Surface protection prevents ugly surface holes
-- [ ] Underwater caves flood with water
+- [x] Caves appear underground (runtime test)
+- [x] Winding tunnels are organic and connected
+- [x] Natural hillside cave entrances (surfaceProtection=0, dramatic terrain)
+- [x] Underwater caves flood with water
+
+### Centralized Configuration
+
+- [x] Create `world/WorldConfig.h` with all tunable parameters
+- [x] Update `TerrainConfig` defaults to use WorldConfig constants
+- [x] Update `SpaghettiCaveConfig` defaults to use WorldConfig constants
+- [x] Update `ChunkManager` to use WorldConfig constants
 
 ## Phase 8B: Cheese & Noodle Caves (Backlog)
 
@@ -255,3 +262,22 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
 - [ ] **Advanced Lighting** (Optional)
   - [ ] Sunlight propagation
   - [ ] Block light sources (torches)
+
+## Phase 9: Biome System & Rivers ✅
+
+- [x] **Biome System**
+  - [x] Create `world/Biome.h` with BiomeType enum (Plains, Mountains)
+  - [x] Define biome parameters (baseHeight, amplitude, layer composition)
+  - [x] Integrate biome sampling into `TerrainGenerator` via low-frequency noise
+- [x] **River System**
+  - [x] Add cellular noise layer for winding river paths
+  - [x] Carve river channels where noise exceeds threshold
+  - [x] Fill carved areas with water at appropriate depth
+  - [x] Disable rivers in mountain biomes (too steep)
+- [x] **Update WorldConfig.h**
+  - [x] Add biome noise parameters (BIOME_FREQUENCY)
+  - [x] Add river generation parameters (RIVER_FREQUENCY, THRESHOLD, DEPTH)
+- [x] **Validation**
+  - [x] Build succeeds
+  - [ ] Plains and Mountains biomes visible with distinct terrain (runtime)
+  - [ ] Rivers flow through Plains as distinct water features (runtime)

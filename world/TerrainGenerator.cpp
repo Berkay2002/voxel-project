@@ -1,10 +1,13 @@
 #include "TerrainGenerator.h"
 #include "FastNoiseLite.h"
+#include <algorithm>  // for std::clamp
 
 namespace Voxel {
 
-// Static noise generator for terrain (configured on construction/SetConfig)
-static FastNoiseLite s_Noise;
+// Static noise generators
+static FastNoiseLite s_TerrainNoise;  // Height map
+static FastNoiseLite s_BiomeNoise;    // Biome selection
+static FastNoiseLite s_RiverNoise;    // River paths
 
 TerrainGenerator::TerrainGenerator() {
     SetConfig(TerrainConfig{});
@@ -17,10 +20,21 @@ TerrainGenerator::TerrainGenerator(const TerrainConfig& config) {
 void TerrainGenerator::SetConfig(const TerrainConfig& config) {
     m_Config = config;
     
-    // Configure FastNoiseLite for terrain
-    s_Noise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
-    s_Noise.SetSeed(m_Config.seed);
-    s_Noise.SetFrequency(m_Config.frequency);
+    // Configure terrain noise
+    s_TerrainNoise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+    s_TerrainNoise.SetSeed(m_Config.seed);
+    s_TerrainNoise.SetFrequency(m_Config.frequency);
+    
+    // Configure biome noise (larger scale for biome regions)
+    s_BiomeNoise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+    s_BiomeNoise.SetSeed(m_Config.seed + 1000);  // Different seed offset
+    s_BiomeNoise.SetFrequency(Config::BIOME_FREQUENCY);
+    
+    // Configure river noise (using cellular for winding paths)
+    s_RiverNoise.SetNoiseType(FastNoiseLite::NoiseType_Cellular);
+    s_RiverNoise.SetSeed(m_Config.seed + 2000);
+    s_RiverNoise.SetFrequency(Config::RIVER_FREQUENCY);
+    s_RiverNoise.SetCellularReturnType(FastNoiseLite::CellularReturnType_Distance2Div);
     
     // Reconfigure all cave carvers with new seed
     for (auto& carver : m_CaveCarvers) {
@@ -28,12 +42,74 @@ void TerrainGenerator::SetConfig(const TerrainConfig& config) {
     }
 }
 
-int TerrainGenerator::GetHeightAt(int worldX, int worldZ) const {
-    // Get noise value in range [-1, 1]
-    float noiseValue = s_Noise.GetNoise(static_cast<float>(worldX), static_cast<float>(worldZ));
+BiomeType TerrainGenerator::GetBiomeAt(int worldX, int worldZ) const {
+    // Sample biome noise: range [-1, 1]
+    float noiseValue = s_BiomeNoise.GetNoise(static_cast<float>(worldX), static_cast<float>(worldZ));
     
-    // Convert to height: baseHeight + (noise * amplitude)
-    int height = m_Config.baseHeight + static_cast<int>(noiseValue * m_Config.amplitude);
+    // Convert to biome: positive = Mountains, negative = Plains
+    // Note: For river checks we still need discrete biome type
+    if (noiseValue > 0.1f) {
+        return BiomeType::Mountains;
+    }
+    return BiomeType::Plains;
+}
+
+// Helper: smoothstep for smooth interpolation
+static float Smoothstep(float edge0, float edge1, float x) {
+    float t = std::clamp((x - edge0) / (edge1 - edge0), 0.0f, 1.0f);
+    return t * t * (3.0f - 2.0f * t);
+}
+
+// Get blended biome parameters at world position (smooth transitions)
+static BiomeParams GetBlendedBiomeParams(int worldX, int worldZ) {
+    // Sample biome noise
+    float noiseValue = s_BiomeNoise.GetNoise(static_cast<float>(worldX), static_cast<float>(worldZ));
+    
+    BiomeParams plains = GetBiomeParams(BiomeType::Plains);
+    BiomeParams mountains = GetBiomeParams(BiomeType::Mountains);
+    
+    // Transition zone: noise [-0.2, 0.3] blends between biomes
+    // Below -0.2 = pure Plains, above 0.3 = pure Mountains
+    float blend = Smoothstep(-0.2f, 0.3f, noiseValue);
+    
+    // Interpolate parameters
+    BiomeParams blended;
+    blended.baseHeight = static_cast<int>(plains.baseHeight * (1.0f - blend) + mountains.baseHeight * blend);
+    blended.amplitude = static_cast<int>(plains.amplitude * (1.0f - blend) + mountains.amplitude * blend);
+    blended.grassDepth = static_cast<int>(plains.grassDepth * (1.0f - blend) + mountains.grassDepth * blend);
+    blended.hasRivers = blend < 0.5f;  // Rivers only in mostly-Plains areas
+    
+    return blended;
+}
+
+bool TerrainGenerator::IsRiver(int worldX, int worldZ) const {
+    if (!m_Config.enableRivers) return false;
+    
+    // Cellular noise creates natural-looking winding paths
+    float noiseValue = s_RiverNoise.GetNoise(static_cast<float>(worldX), static_cast<float>(worldZ));
+    
+    // Normalize to [0, 1] and check threshold
+    // Values close to 0 mark the cell edges = river paths
+    float normalized = (noiseValue + 1.0f) * 0.5f;
+    return normalized < (1.0f - Config::RIVER_THRESHOLD);
+}
+
+int TerrainGenerator::GetRiverDepth(int worldX, int worldZ) const {
+    if (!IsRiver(worldX, worldZ)) return 0;
+    
+    // Rivers carve down from terrain
+    return Config::RIVER_DEPTH;
+}
+
+int TerrainGenerator::GetHeightAt(int worldX, int worldZ) const {
+    // Get BLENDED biome parameters (smooth transitions!)
+    BiomeParams params = GetBlendedBiomeParams(worldX, worldZ);
+    
+    // Get noise value in range [-1, 1]
+    float noiseValue = s_TerrainNoise.GetNoise(static_cast<float>(worldX), static_cast<float>(worldZ));
+    
+    // Convert to height using blended parameters
+    int height = params.baseHeight + static_cast<int>(noiseValue * params.amplitude);
     
     // Clamp to valid chunk height range
     if (height < 1) height = 1;
@@ -50,35 +126,42 @@ void TerrainGenerator::Generate(Chunk& chunk) {
     // Store height map for cave carving pass
     std::vector<int> heightMap(CHUNK_WIDTH * CHUNK_DEPTH);
     
-    // Pass 1: Generate base terrain
+    // Pass 1: Generate base terrain with biomes
     for (int x = 0; x < CHUNK_WIDTH; ++x) {
         for (int z = 0; z < CHUNK_DEPTH; ++z) {
             // Calculate world position
             int worldX = chunkOffsetX + x;
             int worldZ = chunkOffsetZ + z;
             
-            // Get terrain height at this column
+            // Get BLENDED biome params and terrain height
+            BiomeParams biomeParams = GetBlendedBiomeParams(worldX, worldZ);
             int height = GetHeightAt(worldX, worldZ);
-            heightMap[x + z * CHUNK_WIDTH] = height;
             
-            // Fill column with blocks using Minecraft-style layering
+            // Check for river at this position
+            int riverDepth = GetRiverDepth(worldX, worldZ);
+            bool isRiver = riverDepth > 0 && biomeParams.hasRivers;
+            int riverBed = height - riverDepth;
+            
+            heightMap[x + z * CHUNK_WIDTH] = isRiver ? riverBed : height;
+            
+            // Fill column with blocks using biome-specific layering
             for (int y = 0; y < CHUNK_HEIGHT; ++y) {
                 BlockType type = BlockType::Air;
                 
-                if (y < height - 3) {
+                if (isRiver && y > riverBed && y <= riverBed + Config::RIVER_WATER_LEVEL) {
+                    // River water
+                    type = BlockType::Water;
+                } else if (y < height - biomeParams.grassDepth) {
                     // Deep underground: Stone
                     type = BlockType::Stone;
                 } else if (y < height) {
                     // Near surface: Dirt
                     type = BlockType::Dirt;
-                } else if (y == height) {
-                    // Surface: Grass (or Sand if below water, future enhancement)
+                } else if (y == height && (!isRiver || y > riverBed + Config::RIVER_WATER_LEVEL)) {
+                    // Surface: Grass (but not underwater)
                     type = BlockType::Grass;
-                } else if (y <= m_Config.seaLevel && y > height) {
-                    // Above terrain but at or below sea level: Water
-                    type = BlockType::Water;
                 }
-                // y > seaLevel && y > height: Air (already initialized)
+                // Above terrain: Air (already initialized)
                 
                 chunk.SetBlock(x, y, z, type);
             }
@@ -110,14 +193,8 @@ void TerrainGenerator::CarveCaves(Chunk& chunk, const std::vector<int>& heightMa
                 for (const auto& carver : m_CaveCarvers) {
                     if (carver->ShouldCarve(worldX, y, worldZ, 
                                             terrainHeight, m_Config.seaLevel)) {
-                        // Carve the block:
-                        // - Below sea level: fill with Water (flooded caves)
-                        // - Above sea level: set to Air (open caves)
-                        if (y < m_Config.seaLevel) {
-                            chunk.SetBlock(x, y, z, BlockType::Water);
-                        } else {
-                            chunk.SetBlock(x, y, z, BlockType::Air);
-                        }
+                        // Carve the block to Air (caves are air-filled)
+                        chunk.SetBlock(x, y, z, BlockType::Air);
                         break; // One carver is enough to carve this block
                     }
                 }
@@ -137,3 +214,4 @@ void TerrainGenerator::ClearCaveCarvers() {
 }
 
 } // namespace Voxel
+
