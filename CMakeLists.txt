@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.30)
-project(VoxelEngine LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.28)
+project(VoxelEngine LANGUAGES C CXX)
 
 # ============================================================================
 # C++ Standard

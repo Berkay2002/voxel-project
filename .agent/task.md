@@ -1,22 +1,24 @@
 # Project Tasks
 
-## Phase 1: Initialization & Core Engine
+## Phase 1: Initialization & Core Engine ✅
+
 Focus: Getting a window open, OpenGL context running, and basic engine loop.
 
-- [ ] **Project Layout & Build System**
-    - [ ] Create `.gitignore`
-    - [ ] Set up `CMakeLists.txt`
-    - [ ] Configure dependencies (GLFW, GLAD/GLEW, GLM)
-- [ ] **Core Architecture**
-    - [ ] Implement `Core/Window` class (GLFW handling)
-    - [ ] Implement `Core/Engine` class (Main loop)
-    - [ ] Implement `Core/Logger` (Basic console logging)
-- [ ] **Graphics Verification**
-    - [ ] Initialize OpenGL (GLAD/GLEW)
-    - [ ] Clear screen with color
-    - [ ] Render a test triangle (sanity check)
+- [x] **Project Layout & Build System**
+  - [x] Create `.gitignore`
+  - [x] Set up `CMakeLists.txt`
+  - [x] Configure dependencies (GLFW, GLAD, GLM via FetchContent)
+- [x] **Core Architecture**
+  - [x] Implement `Core/Window` class (GLFW handling)
+  - [x] Implement `Core/Engine` class (Main loop)
+  - [x] Implement `Core/Logger` (Basic console logging)
+- [x] **Graphics Verification**
+  - [x] Initialize OpenGL 4.6 (GLAD)
+  - [x] Clear screen with teal color
+  - [ ] Render a test triangle (sanity check)
 
 ## Phase 2: Voxel Basics (Backlog)
+
 - [ ] Shader System (`Shader.h`)
 - [ ] Camera System (`Camera.h`)
 - [ ] Texture System (`Texture.h`)
@@ -24,6 +26,7 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
 - [ ] Basic Mesh Generation
 
 ## Phase 3: Advanced Features (Backlog)
+
 - [ ] Face Culling
 - [ ] Multithreading
 - [ ] FastNoiseLite Integration
