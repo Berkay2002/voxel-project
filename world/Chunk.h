@@ -3,6 +3,13 @@
 #include "Block.h"
 #include <array>
 
+// Forward declarations
+namespace Core {
+class VertexArray;
+class VertexBuffer;
+class IndexBuffer;
+}
+
 namespace Voxel {
 
 // Chunk dimensions (Minecraft-style)
@@ -14,7 +21,7 @@ constexpr int CHUNK_VOLUME = CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_DEPTH;
 class Chunk {
 public:
     Chunk();
-    ~Chunk() = default;
+    ~Chunk();
 
     // Block access
     BlockType GetBlock(int x, int y, int z) const;
@@ -35,6 +42,16 @@ public:
     int GetChunkX() const { return m_ChunkX; }
     int GetChunkZ() const { return m_ChunkZ; }
 
+    // Mesh management
+    void BuildMesh();
+    void UploadMesh();
+    void CleanupMesh();
+    bool HasMesh() const { return m_HasMesh; }
+    
+    // Render this chunk's mesh
+    void Render() const;
+    unsigned int GetIndexCount() const { return m_IndexCount; }
+
 private:
     // Convert 3D coordinates to 1D array index
     int GetIndex(int x, int y, int z) const;
@@ -48,6 +65,13 @@ private:
 
     // Dirty flag for mesh rebuilding
     bool m_Dirty = true;
+
+    // GPU mesh resources (owned by chunk)
+    unsigned int m_VAO = 0;
+    unsigned int m_VBO = 0;
+    unsigned int m_IBO = 0;
+    unsigned int m_IndexCount = 0;
+    bool m_HasMesh = false;
 };
 
 } // namespace Voxel

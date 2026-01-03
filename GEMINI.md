@@ -22,8 +22,8 @@ The `.agent` directory serves as the persistent "brain" and memory for AI agents
 - **Windowing/Input**: GLFW 3.4
 - **Graphics API**: OpenGL 4.6 (Core Profile)
 - **Loaders**: GLAD (or similar)
-- **Math**: GLM 1.0.3
-- **Noise**: FastNoiseLite (Planned)
+- **Math**: GLM 1.0.1
+- **Noise**: FastNoiseLite 1.1.1
 
 ## Architecture & Considerations
 
@@ -34,7 +34,7 @@ The `.agent` directory serves as the persistent "brain" and memory for AI agents
   - Multithreaded Chunk Generation.
 - **Rendering**:
   - Raycasting / DDA for specific checks.
-  - Mesh rebuilding loop: Update -> Cull -> Mess -> GPU.
+  - Mesh rebuilding loop: Update -> Cull -> Mesh -> GPU.
 
 _Refer to `.agent/architecture_reference.md` for the full architectural breakdown._
 
@@ -54,4 +54,13 @@ _Refer to `.agent/architecture_reference.md` for the full architectural breakdow
   - Chunk data structure (16×16×256)
   - Mesh generation with face culling
   - Single chunk rendering validated
-- **Phase 3B**: 🔜 Next (FastNoiseLite, terrain generation)
+- **Phase 3B**: ✅ Complete (2026-01-03)
+  - FastNoiseLite integration via FetchContent
+  - TerrainGenerator with Perlin noise
+  - Procedural hills with Stone/Dirt/Grass layering
+- **Phase 4**: ✅ Complete (2026-01-03)
+  - ChunkManager with hash map storage
+  - Per-chunk GPU mesh resources
+  - 5×5 chunk loading around player
+  - Seamless terrain across chunk boundaries
+- **Phase 5**: 🔜 Next (Multithreading, frustum culling, water)

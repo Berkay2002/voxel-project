@@ -1,10 +1,16 @@
 #include "Chunk.h"
+#include "ChunkMeshBuilder.h"
+#include <glad/gl.h>
 
 namespace Voxel {
 
 Chunk::Chunk() {
     // Initialize all blocks to Air
     m_Blocks.fill(BlockType::Air);
+}
+
+Chunk::~Chunk() {
+    CleanupMesh();
 }
 
 int Chunk::GetIndex(int x, int y, int z) const {
@@ -46,6 +52,93 @@ BlockType Chunk::GetNeighborBlock(int x, int y, int z, Face face) const {
     }
 
     return m_Blocks[GetIndex(nx, ny, nz)];
+}
+
+void Chunk::BuildMesh() {
+    ChunkMeshBuilder builder;
+    ChunkMesh mesh = builder.BuildMesh(*this);
+    
+    if (mesh.IsEmpty()) {
+        CleanupMesh();
+        return;
+    }
+
+    // Create OpenGL buffers if they don't exist
+    if (m_VAO == 0) {
+        glGenVertexArrays(1, &m_VAO);
+        glGenBuffers(1, &m_VBO);
+        glGenBuffers(1, &m_IBO);
+    }
+
+    // Upload vertex data
+    glBindVertexArray(m_VAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
+    glBufferData(GL_ARRAY_BUFFER, 
+                 mesh.vertices.size() * sizeof(ChunkVertex),
+                 mesh.vertices.data(), 
+                 GL_STATIC_DRAW);
+
+    // Position attribute (location 0)
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), 
+                          (void*)offsetof(ChunkVertex, position));
+    glEnableVertexAttribArray(0);
+
+    // UV attribute (location 1)
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), 
+                          (void*)offsetof(ChunkVertex, uv));
+    glEnableVertexAttribArray(1);
+
+    // Normal attribute (location 2)
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), 
+                          (void*)offsetof(ChunkVertex, normal));
+    glEnableVertexAttribArray(2);
+
+    // Upload index data
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_IBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                 mesh.indices.size() * sizeof(unsigned int),
+                 mesh.indices.data(),
+                 GL_STATIC_DRAW);
+
+    glBindVertexArray(0);
+
+    m_IndexCount = static_cast<unsigned int>(mesh.indices.size());
+    m_HasMesh = true;
+    m_Dirty = false;
+}
+
+void Chunk::UploadMesh() {
+    // Alias for BuildMesh - rebuilds and uploads
+    BuildMesh();
+}
+
+void Chunk::CleanupMesh() {
+    if (m_VAO != 0) {
+        glDeleteVertexArrays(1, &m_VAO);
+        m_VAO = 0;
+    }
+    if (m_VBO != 0) {
+        glDeleteBuffers(1, &m_VBO);
+        m_VBO = 0;
+    }
+    if (m_IBO != 0) {
+        glDeleteBuffers(1, &m_IBO);
+        m_IBO = 0;
+    }
+    m_IndexCount = 0;
+    m_HasMesh = false;
+}
+
+void Chunk::Render() const {
+    if (!m_HasMesh || m_VAO == 0) {
+        return;
+    }
+
+    glBindVertexArray(m_VAO);
+    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(m_IndexCount), 
+                   GL_UNSIGNED_INT, nullptr);
+    glBindVertexArray(0);
 }
 
 } // namespace Voxel

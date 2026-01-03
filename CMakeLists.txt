@@ -59,6 +59,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(stb)
 
+# FastNoiseLite (header-only noise library)
+FetchContent_Declare(
+    FastNoiseLite
+    GIT_REPOSITORY https://github.com/Auburn/FastNoiseLite.git
+    GIT_TAG        v1.1.1
+)
+FetchContent_MakeAvailable(FastNoiseLite)
+
 # ============================================================================
 # Executable
 # ============================================================================
@@ -74,11 +82,14 @@ add_executable(${PROJECT_NAME}
     core/Camera.cpp
     world/Chunk.cpp
     world/ChunkMeshBuilder.cpp
+    world/TerrainGenerator.cpp
+    world/ChunkManager.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}
     ${stb_SOURCE_DIR}
+    ${fastnoiselite_SOURCE_DIR}/Cpp
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

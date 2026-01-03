@@ -6,16 +6,13 @@ namespace Core {
 
 class Window;
 class Shader;
-class VertexArray;
-class VertexBuffer;
-class IndexBuffer;
 class Texture;
 class Camera;
 
 } // namespace Core
 
 namespace Voxel {
-class Chunk;
+class ChunkManager;
 }
 
 namespace Core {
@@ -36,22 +33,18 @@ public:
 private:
   void Update(float deltaTime);
   void Render();
-  void SetupChunk();  // Replaced SetupCube
+  void SetupWorld();
   void ProcessInput(float deltaTime);
 
   std::unique_ptr<Window> m_Window;
   
   // Rendering resources
   std::unique_ptr<Shader> m_Shader;
-  std::unique_ptr<VertexArray> m_VAO;
-  std::unique_ptr<VertexBuffer> m_VBO;
-  std::unique_ptr<IndexBuffer> m_IBO;
   std::unique_ptr<Texture> m_Texture;
   std::unique_ptr<Camera> m_Camera;
 
-  // Chunk system
-  std::unique_ptr<Voxel::Chunk> m_Chunk;
-  unsigned int m_ChunkIndexCount = 0;
+  // World system
+  std::unique_ptr<Voxel::ChunkManager> m_ChunkManager;
 
   // Input state
   float m_LastX = 400.0f;
@@ -61,4 +54,3 @@ private:
 };
 
 } // namespace Core
-

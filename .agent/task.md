@@ -57,24 +57,46 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
   - [x] Internal faces are culled
   - [x] Block textures display correctly
 
-## Phase 3B: Terrain Generation (Current)
+## Phase 3B: Terrain Generation ✅
 
-- [ ] **FastNoiseLite Integration**
-  - [ ] Add to CMakeLists.txt via FetchContent
-  - [ ] Verify include path works
-- [ ] **TerrainGenerator Class**
-  - [ ] Create `world/TerrainGenerator.h/.cpp`
-  - [ ] Configure Perlin noise (seed, frequency)
-  - [ ] `Generate(Chunk&)` method
-- [ ] **Block Layering Logic**
-  - [ ] Height calculation from noise
-  - [ ] Stone / Dirt / Grass layers
-- [ ] **Integration & Validation**
-  - [ ] Replace Engine.cpp manual terrain with TerrainGenerator
-  - [ ] Verify rolling hills render correctly
+- [x] **FastNoiseLite Integration**
+  - [x] Add to CMakeLists.txt via FetchContent
+  - [x] Verify include path works
+- [x] **TerrainGenerator Class**
+  - [x] Create `world/TerrainGenerator.h/.cpp`
+  - [x] Configure Perlin noise (seed, frequency)
+  - [x] `Generate(Chunk&)` method
+- [x] **Block Layering Logic**
+  - [x] Height calculation from noise
+  - [x] Stone / Dirt / Grass layers
+- [x] **Integration & Validation**
+  - [x] Replace Engine.cpp manual terrain with TerrainGenerator
+  - [x] Verify rolling hills render correctly
 
-## Phase 4: Optimization & World (Backlog)
+## Phase 4: Multi-Chunk World ✅
 
-- [ ] Multithreading for chunk generation
-- [ ] ChunkManager for multi-chunk world
-- [ ] Infinite terrain loading
+- [x] **ChunkManager Class**
+  - [x] Create `world/ChunkManager.h/.cpp`
+  - [x] Hash map storage: `(chunkX, chunkZ)` → `Chunk*`
+  - [x] `GetChunk(cx, cz)` with lazy generation
+  - [x] `Update(playerPos)` for load/unload radius
+- [x] **Chunk Mesh Storage**
+  - [x] Move VAO/VBO/IBO into Chunk or ChunkMesh struct
+  - [x] Per-chunk GPU buffers
+- [x] **Rendering Multiple Chunks**
+  - [x] ChunkManager::RenderAll() iterates visible chunks
+  - [x] Model matrix offset per chunk
+- [x] **Cross-Chunk Face Culling**
+  - [x] Query neighbor chunks at chunk boundaries
+  - [x] Rebuild mesh when neighbor loads
+- [x] **Validation**
+  - [x] 3x3 grid of chunks loads correctly
+  - [x] Seamless terrain across chunk boundaries
+  - [x] Walking triggers load/unload
+
+## Phase 5: Optimization & Features (Backlog)
+
+- [ ] Multithreaded chunk generation
+- [ ] Frustum culling
+- [ ] Water at sea level
+- [ ] Cave generation (3D noise)
