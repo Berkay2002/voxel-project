@@ -301,16 +301,19 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
   - [ ] Dirt blocks appear brown (runtime)
   - [ ] Stone blocks appear gray (runtime)
 
-## Phase 10B: Texture Atlas Infrastructure (Backlog)
+## Phase 10B: Texture Atlas Infrastructure ✅
 
-- [ ] **Texture Array System**
-  - [ ] Create `core/TextureArray.h/.cpp` for 2D array textures
-  - [ ] Load individual block textures into array layers
-- [ ] **Block Texture Assets**
-  - [ ] Create/acquire grass_top.png, grass_side.png, dirt.png, stone.png, water.png
-- [ ] **Per-Vertex Texture Index**
-  - [ ] Replace `color` in `ChunkVertex` with `texIndex` (or add alongside)
-  - [ ] Use `GetTextureIndex()` in mesh builder
-- [ ] **Shader Updates**
-  - [ ] Sample from `sampler2DArray` using texture index
-  - [ ] Combine texture color with lighting
+- [x] **Texture Array System**
+  - [x] Create `core/TextureArray.h/.cpp` for 2D array textures
+  - [x] Load individual block textures into array layers
+- [x] **Block Texture Assets**
+  - [x] Use existing grass_top.png, grass_side.png, dirt.png, stone.png
+- [x] **Per-Vertex Texture Index**
+  - [x] Replace `color` in `ChunkVertex` with `texIndex`
+  - [x] Use `GetTextureIndex()` in mesh builder
+- [x] **Shader Updates**
+  - [x] Sample from `sampler2DArray` using texture index
+  - [x] Combine texture color with lighting
+- [x] **Validation**
+  - [x] Build succeeds
+  - [ ] Block textures visually distinct (runtime)

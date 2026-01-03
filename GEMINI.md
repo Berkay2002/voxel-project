@@ -98,7 +98,8 @@ _Refer to `.agent/architecture_reference.md` for the full architectural breakdow
   - Per-vertex block colors (Grass=green, Dirt=brown, Stone=gray)
   - `GetBlockColor()` helper in `Block.h`
   - Updated shaders to use vertex color attribute (location 4)
-- **Phase 10B**: 🔜 Backlog (Texture Atlas Infrastructure)
-  - Texture array for multiple block textures
-  - Per-vertex texture index instead of color
-  - Load and atlas grass_top, grass_side, dirt, stone, water textures
+- **Phase 10B**: ✅ Complete (2026-01-04)
+  - `TextureArray` class for GL_TEXTURE_2D_ARRAY
+  - Per-vertex texture index (`texIndex`) in `ChunkVertex`
+  - Shaders sample from `sampler2DArray` using layer index
+  - Block textures: grass_top, dirt, grass_side, stone
