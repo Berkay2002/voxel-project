@@ -94,3 +94,11 @@ _Refer to `.agent/architecture_reference.md` for the full architectural breakdow
   - Biome noise for large-scale region selection
   - River water using cellular noise (winding paths in Plains only)
   - Removed global sea level flooding
+- **Phase 10A**: ✅ Complete (2026-01-03)
+  - Per-vertex block colors (Grass=green, Dirt=brown, Stone=gray)
+  - `GetBlockColor()` helper in `Block.h`
+  - Updated shaders to use vertex color attribute (location 4)
+- **Phase 10B**: 🔜 Backlog (Texture Atlas Infrastructure)
+  - Texture array for multiple block textures
+  - Per-vertex texture index instead of color
+  - Load and atlas grass_top, grass_side, dirt, stone, water textures

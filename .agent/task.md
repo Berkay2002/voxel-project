@@ -281,3 +281,36 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
   - [x] Build succeeds
   - [ ] Plains and Mountains biomes visible with distinct terrain (runtime)
   - [ ] Rivers flow through Plains as distinct water features (runtime)
+
+## Phase 10A: Per-Vertex Block Colors ✅
+
+- [x] **ChunkVertex Color Attribute**
+  - [x] Add `glm::vec3 color` to `ChunkVertex` struct
+  - [x] Update all vertex attribute setups in `Chunk.cpp` (sync + async paths)
+- [x] **Block Color Helper**
+  - [x] Add `GetBlockColor(BlockType, Face)` to `Block.h`
+  - [x] Distinct colors: Grass=green, Dirt=brown, Stone=gray, Water=blue
+- [x] **Mesh Builder Integration**
+  - [x] Set vertex color in `ChunkMeshBuilder::AddFace()`
+- [x] **Shader Updates**
+  - [x] Update `lit.vert/frag` to use vertex color at location 4
+  - [x] Update `water.vert/frag` to use vertex color at location 4
+- [x] **Validation**
+  - [x] Build succeeds
+  - [ ] Grass blocks appear green (runtime)
+  - [ ] Dirt blocks appear brown (runtime)
+  - [ ] Stone blocks appear gray (runtime)
+
+## Phase 10B: Texture Atlas Infrastructure (Backlog)
+
+- [ ] **Texture Array System**
+  - [ ] Create `core/TextureArray.h/.cpp` for 2D array textures
+  - [ ] Load individual block textures into array layers
+- [ ] **Block Texture Assets**
+  - [ ] Create/acquire grass_top.png, grass_side.png, dirt.png, stone.png, water.png
+- [ ] **Per-Vertex Texture Index**
+  - [ ] Replace `color` in `ChunkVertex` with `texIndex` (or add alongside)
+  - [ ] Use `GetTextureIndex()` in mesh builder
+- [ ] **Shader Updates**
+  - [ ] Sample from `sampler2DArray` using texture index
+  - [ ] Combine texture color with lighting

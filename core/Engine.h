@@ -7,6 +7,7 @@ namespace Core {
 class Window;
 class Shader;
 class Texture;
+class TextureArray;
 class Camera;
 
 } // namespace Core
@@ -39,9 +40,9 @@ private:
   std::unique_ptr<Window> m_Window;
   
   // Rendering resources
-  std::unique_ptr<Shader> m_Shader;       // Opaque geometry shader (lit)
-  std::unique_ptr<Shader> m_WaterShader;  // Water shader (transparent)
-  std::unique_ptr<Texture> m_Texture;
+  std::unique_ptr<Shader> m_Shader;           // Opaque geometry shader (lit)
+  std::unique_ptr<Shader> m_WaterShader;      // Water shader (transparent)
+  std::unique_ptr<TextureArray> m_TextureArray;  // Block texture array
   std::unique_ptr<Camera> m_Camera;
 
   // World system

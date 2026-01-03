@@ -87,6 +87,7 @@ add_executable(${PROJECT_NAME}
     core/IndexBuffer.cpp
     core/VertexArray.cpp
     core/Texture.cpp
+    core/TextureArray.cpp
     core/Camera.cpp
     core/Frustum.cpp
     world/Chunk.cpp

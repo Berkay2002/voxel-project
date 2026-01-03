@@ -11,7 +11,8 @@ struct ChunkVertex {
     glm::vec3 position;
     glm::vec2 uv;
     glm::vec3 normal;
-    float ao;  // Ambient occlusion: 0.0 (fully occluded) to 1.0 (fully lit)
+    float ao;       // Ambient occlusion: 0.0 (fully occluded) to 1.0 (fully lit)
+    float texIndex; // Texture array layer index (0=grass_top, 1=dirt, etc.)
 };
 
 // Result of mesh building

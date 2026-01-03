@@ -95,4 +95,27 @@ inline int GetTextureIndex(BlockType type, Face face) {
     }
 }
 
+// Get color for a block face (used for per-vertex coloring before texture atlas)
+inline glm::vec3 GetBlockColor(BlockType type, Face face) {
+    switch (type) {
+        case BlockType::Grass:
+            if (face == Face::Top) {
+                return glm::vec3(0.45f, 0.75f, 0.35f);  // Green grass top
+            } else if (face == Face::Bottom) {
+                return glm::vec3(0.55f, 0.35f, 0.20f);  // Dirt bottom
+            } else {
+                // Grass sides: gradient from grass to dirt
+                return glm::vec3(0.50f, 0.55f, 0.30f);  // Brownish-green
+            }
+        case BlockType::Dirt:
+            return glm::vec3(0.55f, 0.35f, 0.20f);      // Brown dirt
+        case BlockType::Stone:
+            return glm::vec3(0.55f, 0.55f, 0.55f);      // Gray stone
+        case BlockType::Water:
+            return glm::vec3(0.2f, 0.4f, 0.8f);         // Blue-ish water
+        default:
+            return glm::vec3(1.0f, 0.0f, 1.0f);         // Magenta for missing
+    }
+}
+
 } // namespace Voxel

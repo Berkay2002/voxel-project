@@ -3,20 +3,19 @@
 in vec2 TexCoord;
 in vec3 Normal;
 in float AO;
+in float TexIndex;
 
 out vec4 FragColor;
 
-uniform sampler2D u_Texture;
-uniform vec3 u_LightDir;          // Normalized direction TO the light (sun)
-uniform float u_AmbientStrength;  // 0.0 - 1.0 (recommend 0.3-0.4)
-uniform float u_WaterAlpha;       // Water transparency (recommend 0.6-0.8)
+uniform sampler2DArray u_TextureArray;  // Texture array for block textures
+uniform vec3 u_LightDir;                // Normalized direction TO the light (sun)
+uniform float u_AmbientStrength;        // 0.0 - 1.0 (recommend 0.3-0.4)
+uniform float u_WaterAlpha;             // Water transparency (recommend 0.6-0.8)
 
 void main() {
-    vec4 texColor = texture(u_Texture, TexCoord);
-    
-    // Water tint - blend with blue
-    vec3 waterTint = vec3(0.2, 0.4, 0.8);
-    vec3 tintedColor = mix(texColor.rgb, waterTint, 0.6);
+    // Sample from texture array (water uses layer from TexIndex)
+    // For now, use a blue water color since we don't have a water texture
+    vec3 waterColor = vec3(0.2, 0.4, 0.8);
     
     // Diffuse lighting (Lambertian reflection)
     vec3 norm = normalize(Normal);
@@ -28,5 +27,5 @@ void main() {
     // Add slight brightness boost to water
     lighting = min(lighting * 1.1, 1.0);
     
-    FragColor = vec4(tintedColor * lighting, u_WaterAlpha);
+    FragColor = vec4(waterColor * lighting, u_WaterAlpha);
 }

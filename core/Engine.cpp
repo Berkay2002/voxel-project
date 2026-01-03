@@ -2,7 +2,7 @@
 #include "core/Camera.h"
 #include "core/Logger.h"
 #include "core/Shader.h"
-#include "core/Texture.h"
+#include "core/TextureArray.h"
 #include "core/Window.h"
 
 // Voxel system
@@ -86,17 +86,27 @@ void Engine::SetupWorld() {
     return;
   }
 
-  // Load texture (using grass block for now - single texture for all blocks)
-  m_Texture = std::make_unique<Texture>("assets/textures/blocks/grass_block.png");
+  // Load block textures into texture array
+  // Layer order matches GetTextureIndex() in Block.h:
+  //   0 = grass_block.png (grass top)
+  //   1 = dirt_block.png
+  //   2 = grass_block_side.png
+  //   3 = stone_block.png
+  m_TextureArray = std::make_unique<TextureArray>(std::vector<std::string>{
+      "assets/textures/blocks/grass_block.png",      // Layer 0: Grass top
+      "assets/textures/blocks/dirt_block.png",       // Layer 1: Dirt
+      "assets/textures/blocks/grass_block_side.png", // Layer 2: Grass side
+      "assets/textures/blocks/stone_block.png"       // Layer 3: Stone
+  });
 
-  if (!m_Texture->IsValid()) {
-    LOG_ERROR("Failed to load texture for world");
+  if (!m_TextureArray->IsValid()) {
+    LOG_ERROR("Failed to load texture array for world");
     return;
   }
 
   // Set lit shader uniforms
   m_Shader->Bind();
-  m_Shader->SetInt("u_Texture", 0);
+  m_Shader->SetInt("u_TextureArray", 0);  // Texture array in slot 0
   // Sun direction: slightly angled from above-right
   m_Shader->SetVec3("u_LightDir", glm::normalize(glm::vec3(0.5f, 1.0f, 0.3f)));
   // Ambient strength: prevents pure black shadows
@@ -105,7 +115,7 @@ void Engine::SetupWorld() {
 
   // Set water shader uniforms
   m_WaterShader->Bind();
-  m_WaterShader->SetInt("u_Texture", 0);
+  m_WaterShader->SetInt("u_TextureArray", 0);  // Same texture array
   m_WaterShader->SetVec3("u_LightDir", glm::normalize(glm::vec3(0.5f, 1.0f, 0.3f)));
   m_WaterShader->SetFloat("u_AmbientStrength", 0.35f);
   m_WaterShader->SetFloat("u_WaterAlpha", 0.7f);  // Water transparency
@@ -115,7 +125,7 @@ void Engine::SetupWorld() {
   // Create chunk manager
   m_ChunkManager = std::make_unique<Voxel::ChunkManager>();
 
-  LOG_INFO("World setup complete with ChunkManager, lighting, and water system");
+  LOG_INFO("World setup complete with ChunkManager, texture array, and water system");
 }
 
 void Engine::ProcessInput(float deltaTime) {
@@ -213,13 +223,13 @@ void Engine::Render() {
   glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  if (m_Shader && m_Shader->IsValid() && m_Texture && m_Camera && m_ChunkManager) {
+  if (m_Shader && m_Shader->IsValid() && m_TextureArray && m_Camera && m_ChunkManager) {
     // Calculate aspect ratio
     float aspectRatio = static_cast<float>(m_Window->GetWidth()) / 
                         static_cast<float>(m_Window->GetHeight());
 
-    // Bind texture
-    m_Texture->Bind(0);
+    // Bind texture array
+    m_TextureArray->Bind(0);
 
     // === PASS 1: Render opaque geometry ===
     m_ChunkManager->RenderAll(*m_Shader, *m_Camera, aspectRatio);
@@ -246,7 +256,7 @@ void Engine::Render() {
       glDisable(GL_BLEND);
     }
 
-    m_Texture->Unbind();
+    m_TextureArray->Unbind();
   }
 }
 

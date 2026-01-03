@@ -99,12 +99,15 @@ void ChunkMeshBuilder::AddFace(ChunkMesh& mesh,
     float ao[4];
     CalculateFaceAO(chunk, x, y, z, face, ao);
 
+    // Get texture index based on block type and face
+    float texIndex = static_cast<float>(GetTextureIndex(blockType, face));
+
     // Current vertex index before adding new vertices
     unsigned int baseIndex = static_cast<unsigned int>(mesh.vertices.size());
 
     // Add 4 vertices for the face
     for (int i = 0; i < 4; ++i) {
-        mesh.vertices.push_back({vertices[i], uvs[i], normal, ao[i]});
+        mesh.vertices.push_back({vertices[i], uvs[i], normal, ao[i], texIndex});
     }
 
     // Add 2 triangles (6 indices) for the face
