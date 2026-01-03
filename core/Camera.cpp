@@ -76,4 +76,9 @@ void Camera::UpdateCameraVectors() {
   m_Up = glm::normalize(glm::cross(m_Right, m_Front));
 }
 
+void Camera::UpdateFrustum(float aspectRatio) {
+  glm::mat4 viewProj = GetViewProjectionMatrix(aspectRatio);
+  m_Frustum.ExtractPlanes(viewProj);
+}
+
 } // namespace Core

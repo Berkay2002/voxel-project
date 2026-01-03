@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Frustum.h"
 #include <glm/glm.hpp>
 
 namespace Core {
@@ -13,6 +14,10 @@ public:
   [[nodiscard]] glm::mat4 GetViewMatrix() const;
   [[nodiscard]] glm::mat4 GetProjectionMatrix(float aspectRatio) const;
   [[nodiscard]] glm::mat4 GetViewProjectionMatrix(float aspectRatio) const;
+
+  // Frustum culling
+  void UpdateFrustum(float aspectRatio);
+  [[nodiscard]] const Frustum& GetFrustum() const { return m_Frustum; }
 
   // Movement
   void ProcessKeyboard(float deltaTime, bool forward, bool backward, 
@@ -49,7 +54,10 @@ private:
   float m_Sensitivity = 0.1f;
   float m_FOV = 45.0f;
   float m_NearPlane = 0.1f;
-  float m_FarPlane = 100.0f;
+  float m_FarPlane = 500.0f;  // Increased for larger view distances
+
+  // Cached frustum for culling
+  Frustum m_Frustum;
 };
 
 } // namespace Core

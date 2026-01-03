@@ -94,9 +94,59 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
   - [x] Seamless terrain across chunk boundaries
   - [x] Walking triggers load/unload
 
-## Phase 5: Optimization & Features (Backlog)
+## Phase 5: Performance Optimization (In Progress)
 
-- [ ] Multithreaded chunk generation
-- [ ] Frustum culling
-- [ ] Water at sea level
-- [ ] Cave generation (3D noise)
+### Part A: Frustum Culling
+
+- [/] **Frustum System**
+  - [/] Create `core/Frustum.h` with plane extraction from view-projection matrix
+  - [ ] Implement `IsAABBVisible()` for chunk bounding box tests
+- [ ] **Camera Integration**
+  - [ ] Add `Frustum` member to `Camera` class
+  - [ ] Add `UpdateFrustum(aspectRatio)` method
+- [ ] **ChunkManager Integration**
+  - [ ] Add frustum test before rendering each chunk
+  - [ ] Add debug logging for culled chunk count
+- [ ] **Validation**
+  - [ ] Verify chunks behind camera are not rendered
+  - [ ] Compare FPS before/after
+
+### Part B: Multithreaded Chunk Generation
+
+- [ ] **Thread Pool**
+  - [ ] Add BS::thread_pool to CMakeLists.txt via FetchContent
+  - [ ] Verify header include path works
+- [ ] **Chunk Task System**
+  - [ ] Create `world/ChunkTask.h` with `ChunkMeshData` struct
+  - [ ] Define `ChunkState` enum (Unloaded, Generating, MeshPending, Ready)
+- [ ] **Chunk Refactoring**
+  - [ ] Add `std::atomic<ChunkState>` to `Chunk`
+  - [ ] Create `GenerateMeshData()` (thread-safe, no OpenGL)
+  - [ ] Create `UploadMeshFromData()` (main thread only)
+- [ ] **ChunkManager Async Loading**
+  - [ ] Add `m_ThreadPool` and `m_PendingMeshes` queue
+  - [ ] Implement `LoadChunkAsync()` to enqueue background tasks
+  - [ ] Implement `ProcessPendingMeshes()` for main thread GPU upload
+  - [ ] Rate-limit uploads (max 2 per frame) to avoid hitches
+- [ ] **Engine Integration**
+  - [ ] Call `ProcessPendingMeshes()` in `Engine::Update()`
+- [ ] **Validation**
+  - [ ] Verify chunks appear progressively
+  - [ ] Verify no frame hitches when moving rapidly
+  - [ ] Run for extended period to check for race conditions
+
+## Phase 6: World Features (Backlog)
+
+- [ ] **Water System**
+  - [ ] Water BlockType at sea level
+  - [ ] Transparent rendering (alpha blending)
+  - [ ] Animated water UVs (optional)
+- [ ] **Cave Generation**
+  - [ ] 3D Perlin noise for cave carving
+  - [ ] Ore vein distribution
+- [ ] **More Block Types**
+  - [ ] Sand, Gravel, Cobblestone
+  - [ ] Texture atlas for multiple block textures
+- [ ] **Lighting**
+  - [ ] Basic ambient + directional sun
+  - [ ] Per-vertex ambient occlusion
