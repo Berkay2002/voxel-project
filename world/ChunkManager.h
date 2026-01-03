@@ -1,10 +1,14 @@
 #pragma once
 
 #include "Chunk.h"
+#include "ChunkTask.h"
 #include "TerrainGenerator.h"
 #include <unordered_map>
 #include <memory>
+#include <queue>
+#include <mutex>
 #include <glm/glm.hpp>
+#include <BS_thread_pool.hpp>
 
 namespace Core {
 class Shader;
@@ -33,10 +37,13 @@ struct ChunkCoordHash {
 class ChunkManager {
 public:
     ChunkManager();
-    ~ChunkManager() = default;
+    ~ChunkManager();
 
     // Update chunks based on player position (load/unload)
     void Update(const glm::vec3& playerPos);
+
+    // Process completed mesh tasks (call from main thread each frame)
+    void ProcessPendingMeshes();
 
     // Render all loaded chunks
     void RenderAll(Core::Shader& shader, Core::Camera& camera, float aspectRatio);
@@ -55,8 +62,11 @@ private:
     // Convert world position to chunk coordinates
     ChunkCoord WorldToChunkCoord(const glm::vec3& worldPos) const;
 
-    // Load a chunk at the given coordinates
+    // Load a chunk synchronously (legacy method)
     void LoadChunk(int chunkX, int chunkZ);
+
+    // Load a chunk asynchronously using thread pool
+    void LoadChunkAsync(int chunkX, int chunkZ);
 
     // Unload a chunk at the given coordinates
     void UnloadChunk(int chunkX, int chunkZ);
@@ -67,8 +77,15 @@ private:
     // Chunk storage
     std::unordered_map<ChunkCoord, std::unique_ptr<Chunk>, ChunkCoordHash> m_Chunks;
 
-    // Terrain generator
+    // Terrain generator (thread-safe for reading config)
     TerrainGenerator m_TerrainGenerator;
+
+    // Thread pool for background chunk work (light version - no priority queue)
+    BS::light_thread_pool m_ThreadPool;
+
+    // Thread-safe queue for completed mesh data
+    std::queue<ChunkMeshData> m_PendingMeshes;
+    std::mutex m_PendingMeshMutex;
 
     // Load/unload configuration
     int m_LoadRadius = 2;      // Chunks to load around player (5x5 grid with radius 2)
@@ -76,6 +93,9 @@ private:
 
     // Current center chunk (to detect when player moves to new chunk)
     ChunkCoord m_CenterChunk = {0, 0};
+
+    // Rate limiting for mesh uploads
+    static constexpr int MAX_UPLOADS_PER_FRAME = 2;
 };
 
 } // namespace Voxel

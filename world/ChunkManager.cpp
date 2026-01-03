@@ -17,7 +17,14 @@ ChunkManager::ChunkManager() {
     config.amplitude = 20;
     m_TerrainGenerator.SetConfig(config);
     
-    LOG_INFO("ChunkManager initialized with load radius " + std::to_string(m_LoadRadius));
+    LOG_INFO("ChunkManager initialized with load radius " + std::to_string(m_LoadRadius) +
+             ", thread pool size: " + std::to_string(m_ThreadPool.get_thread_count()));
+}
+
+ChunkManager::~ChunkManager() {
+    // Wait for all pending tasks to complete before destroying
+    m_ThreadPool.wait();
+    LOG_INFO("ChunkManager destroyed, cleaned up " + std::to_string(m_Chunks.size()) + " chunks");
 }
 
 ChunkCoord ChunkManager::WorldToChunkCoord(const glm::vec3& worldPos) const {
@@ -30,7 +37,7 @@ ChunkCoord ChunkManager::WorldToChunkCoord(const glm::vec3& worldPos) const {
 void ChunkManager::Update(const glm::vec3& playerPos) {
     ChunkCoord currentCenter = WorldToChunkCoord(playerPos);
 
-    // Load chunks within load radius
+    // Load chunks within load radius (async)
     for (int dx = -m_LoadRadius; dx <= m_LoadRadius; ++dx) {
         for (int dz = -m_LoadRadius; dz <= m_LoadRadius; ++dz) {
             int cx = currentCenter.x + dx;
@@ -38,7 +45,7 @@ void ChunkManager::Update(const glm::vec3& playerPos) {
             
             ChunkCoord coord = {cx, cz};
             if (m_Chunks.find(coord) == m_Chunks.end()) {
-                LoadChunk(cx, cz);
+                LoadChunkAsync(cx, cz);
             }
         }
     }
@@ -65,20 +72,71 @@ bool ChunkManager::ShouldBeLoaded(int chunkX, int chunkZ, const ChunkCoord& cent
 }
 
 void ChunkManager::LoadChunk(int chunkX, int chunkZ) {
+    // Synchronous loading - for backwards compatibility or fallback
     auto chunk = std::make_unique<Chunk>();
     chunk->SetPosition(chunkX, chunkZ);
+    chunk->SetState(ChunkState::Generating);
     
     // Generate terrain
     m_TerrainGenerator.Generate(*chunk);
     
     // Build mesh
     chunk->BuildMesh();
+    chunk->SetState(ChunkState::Ready);
     
     ChunkCoord coord = {chunkX, chunkZ};
     m_Chunks[coord] = std::move(chunk);
     
-    LOG_DEBUG("Loaded chunk (" + std::to_string(chunkX) + ", " + std::to_string(chunkZ) + 
+    LOG_DEBUG("Sync loaded chunk (" + std::to_string(chunkX) + ", " + std::to_string(chunkZ) + 
               ") - Total: " + std::to_string(m_Chunks.size()));
+}
+
+void ChunkManager::LoadChunkAsync(int chunkX, int chunkZ) {
+    // Create chunk immediately (for state tracking and map presence)
+    auto chunk = std::make_unique<Chunk>();
+    chunk->SetPosition(chunkX, chunkZ);
+    chunk->SetState(ChunkState::Generating);
+    
+    Chunk* rawPtr = chunk.get();
+    ChunkCoord coord = {chunkX, chunkZ};
+    m_Chunks[coord] = std::move(chunk);
+    
+    // Submit task to thread pool (fire-and-forget style)
+    m_ThreadPool.detach_task([this, rawPtr, chunkX, chunkZ]() {
+        // Generate terrain (thread-safe read of config)
+        m_TerrainGenerator.Generate(*rawPtr);
+        rawPtr->SetState(ChunkState::Meshing);
+        
+        // Build mesh data without OpenGL calls
+        ChunkMeshData meshData = rawPtr->GenerateMeshData();
+        
+        // Queue for main thread upload
+        {
+            std::lock_guard<std::mutex> lock(m_PendingMeshMutex);
+            m_PendingMeshes.push(std::move(meshData));
+        }
+        
+        rawPtr->SetState(ChunkState::MeshPending);
+    });
+}
+
+void ChunkManager::ProcessPendingMeshes() {
+    std::lock_guard<std::mutex> lock(m_PendingMeshMutex);
+    
+    int processed = 0;
+    
+    while (!m_PendingMeshes.empty() && processed < MAX_UPLOADS_PER_FRAME) {
+        ChunkMeshData& data = m_PendingMeshes.front();
+        
+        Chunk* chunk = GetChunk(data.chunkX, data.chunkZ);
+        if (chunk && chunk->GetState() == ChunkState::MeshPending) {
+            chunk->UploadMeshFromData(data);
+            chunk->SetState(ChunkState::Ready);
+        }
+        
+        m_PendingMeshes.pop();
+        processed++;
+    }
 }
 
 void ChunkManager::UnloadChunk(int chunkX, int chunkZ) {

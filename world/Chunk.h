@@ -1,7 +1,9 @@
 #pragma once
 
 #include "Block.h"
+#include "ChunkTask.h"
 #include <array>
+#include <atomic>
 
 // Forward declarations
 namespace Core {
@@ -23,7 +25,7 @@ public:
     Chunk();
     ~Chunk();
 
-    // Block access
+    // Block access (thread-safe for reading during mesh generation)
     BlockType GetBlock(int x, int y, int z) const;
     void SetBlock(int x, int y, int z, BlockType type);
 
@@ -42,11 +44,21 @@ public:
     int GetChunkX() const { return m_ChunkX; }
     int GetChunkZ() const { return m_ChunkZ; }
 
-    // Mesh management
+    // Thread-safe state management
+    ChunkState GetState() const { return m_State.load(std::memory_order_acquire); }
+    void SetState(ChunkState state) { m_State.store(state, std::memory_order_release); }
+
+    // Mesh management - SYNCHRONOUS (original method, for backwards compatibility)
     void BuildMesh();
     void UploadMesh();
     void CleanupMesh();
     bool HasMesh() const { return m_HasMesh; }
+    
+    // Mesh management - ASYNC (thread-safe)
+    // Generate mesh data without OpenGL calls (safe for background threads)
+    ChunkMeshData GenerateMeshData() const;
+    // Upload pre-generated mesh data to GPU (main thread only!)
+    void UploadMeshFromData(const ChunkMeshData& data);
     
     // Render this chunk's mesh
     void Render() const;
@@ -65,6 +77,9 @@ private:
 
     // Dirty flag for mesh rebuilding
     bool m_Dirty = true;
+
+    // Thread-safe state for async loading
+    std::atomic<ChunkState> m_State{ChunkState::Unloaded};
 
     // GPU mesh resources (owned by chunk)
     unsigned int m_VAO = 0;

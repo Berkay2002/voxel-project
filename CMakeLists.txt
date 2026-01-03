@@ -67,6 +67,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(FastNoiseLite)
 
+# BS::thread_pool (header-only thread pool library for async chunk loading)
+FetchContent_Declare(
+    thread_pool
+    GIT_REPOSITORY https://github.com/bshoshany/thread-pool.git
+    GIT_TAG        v5.0.0
+)
+FetchContent_MakeAvailable(thread_pool)
+
 # ============================================================================
 # Executable
 # ============================================================================
@@ -91,6 +99,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}
     ${stb_SOURCE_DIR}
     ${fastnoiselite_SOURCE_DIR}/Cpp
+    ${thread_pool_SOURCE_DIR}/include
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

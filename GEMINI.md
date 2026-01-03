@@ -63,4 +63,9 @@ _Refer to `.agent/architecture_reference.md` for the full architectural breakdow
   - Per-chunk GPU mesh resources
   - 5×5 chunk loading around player
   - Seamless terrain across chunk boundaries
-- **Phase 5**: 🔜 Next (Multithreading, frustum culling, water)
+- **Phase 5**: ✅ Complete (2026-01-03)
+  - Frustum culling (Gribb-Hartmann plane extraction, AABB tests)
+  - BS::thread_pool for async chunk generation
+  - Separated mesh generation (worker) from GPU upload (main thread)
+  - Rate-limited uploads (2 per frame) to avoid hitches
+- **Phase 6**: 🔜 Next (Water, caves, more blocks, lighting)

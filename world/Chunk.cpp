@@ -130,6 +130,94 @@ void Chunk::CleanupMesh() {
     m_HasMesh = false;
 }
 
+ChunkMeshData Chunk::GenerateMeshData() const {
+    // This method is thread-safe - NO OpenGL calls!
+    // Build mesh using the mesh builder
+    ChunkMeshBuilder builder;
+    ChunkMesh mesh = builder.BuildMesh(*this);
+    
+    ChunkMeshData data;
+    data.chunkX = m_ChunkX;
+    data.chunkZ = m_ChunkZ;
+    
+    if (mesh.IsEmpty()) {
+        data.valid = false;
+        return data;
+    }
+    
+    // Convert ChunkVertex array to flat float array for GPU upload
+    // Layout: position (3) + uv (2) + normal (3) = 8 floats per vertex
+    data.vertices.reserve(mesh.vertices.size() * 8);
+    for (const auto& vertex : mesh.vertices) {
+        data.vertices.push_back(vertex.position.x);
+        data.vertices.push_back(vertex.position.y);
+        data.vertices.push_back(vertex.position.z);
+        data.vertices.push_back(vertex.uv.x);
+        data.vertices.push_back(vertex.uv.y);
+        data.vertices.push_back(vertex.normal.x);
+        data.vertices.push_back(vertex.normal.y);
+        data.vertices.push_back(vertex.normal.z);
+    }
+    
+    data.indices = std::move(mesh.indices);
+    data.valid = true;
+    
+    return data;
+}
+
+void Chunk::UploadMeshFromData(const ChunkMeshData& data) {
+    // MAIN THREAD ONLY - makes OpenGL calls!
+    
+    if (!data.valid || data.vertices.empty()) {
+        CleanupMesh();
+        return;
+    }
+    
+    // Create OpenGL buffers if they don't exist
+    if (m_VAO == 0) {
+        glGenVertexArrays(1, &m_VAO);
+        glGenBuffers(1, &m_VBO);
+        glGenBuffers(1, &m_IBO);
+    }
+    
+    glBindVertexArray(m_VAO);
+    
+    // Upload vertex data (flat float array)
+    glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
+    glBufferData(GL_ARRAY_BUFFER, 
+                 data.vertices.size() * sizeof(float),
+                 data.vertices.data(), 
+                 GL_STATIC_DRAW);
+    
+    // Vertex layout: position (3) + uv (2) + normal (3) = 8 floats = 32 bytes stride
+    constexpr GLsizei stride = 8 * sizeof(float);
+    
+    // Position attribute (location 0)
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
+    glEnableVertexAttribArray(0);
+    
+    // UV attribute (location 1)
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    
+    // Normal attribute (location 2)
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride, (void*)(5 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+    
+    // Upload index data
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_IBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                 data.indices.size() * sizeof(unsigned int),
+                 data.indices.data(),
+                 GL_STATIC_DRAW);
+    
+    glBindVertexArray(0);
+    
+    m_IndexCount = static_cast<unsigned int>(data.indices.size());
+    m_HasMesh = true;
+    m_Dirty = false;
+}
+
 void Chunk::Render() const {
     if (!m_HasMesh || m_VAO == 0) {
         return;

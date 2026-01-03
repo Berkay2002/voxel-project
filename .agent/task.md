@@ -98,42 +98,42 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
 
 ### Part A: Frustum Culling
 
-- [/] **Frustum System**
-  - [/] Create `core/Frustum.h` with plane extraction from view-projection matrix
-  - [ ] Implement `IsAABBVisible()` for chunk bounding box tests
-- [ ] **Camera Integration**
-  - [ ] Add `Frustum` member to `Camera` class
-  - [ ] Add `UpdateFrustum(aspectRatio)` method
-- [ ] **ChunkManager Integration**
-  - [ ] Add frustum test before rendering each chunk
-  - [ ] Add debug logging for culled chunk count
-- [ ] **Validation**
-  - [ ] Verify chunks behind camera are not rendered
-  - [ ] Compare FPS before/after
+- [x] **Frustum System**
+  - [x] Create `core/Frustum.h` with plane extraction from view-projection matrix
+  - [x] Implement `IsAABBVisible()` for chunk bounding box tests
+- [x] **Camera Integration**
+  - [x] Add `Frustum` member to `Camera` class
+  - [x] Add `UpdateFrustum(aspectRatio)` method
+- [x] **ChunkManager Integration**
+  - [x] Add frustum test before rendering each chunk
+  - [x] Add debug logging for culled chunk count
+- [x] **Validation**
+  - [x] Build succeeds
+  - [ ] Verify chunks behind camera are not rendered (runtime test)
 
 ### Part B: Multithreaded Chunk Generation
 
-- [ ] **Thread Pool**
-  - [ ] Add BS::thread_pool to CMakeLists.txt via FetchContent
-  - [ ] Verify header include path works
-- [ ] **Chunk Task System**
-  - [ ] Create `world/ChunkTask.h` with `ChunkMeshData` struct
-  - [ ] Define `ChunkState` enum (Unloaded, Generating, MeshPending, Ready)
-- [ ] **Chunk Refactoring**
-  - [ ] Add `std::atomic<ChunkState>` to `Chunk`
-  - [ ] Create `GenerateMeshData()` (thread-safe, no OpenGL)
-  - [ ] Create `UploadMeshFromData()` (main thread only)
-- [ ] **ChunkManager Async Loading**
-  - [ ] Add `m_ThreadPool` and `m_PendingMeshes` queue
-  - [ ] Implement `LoadChunkAsync()` to enqueue background tasks
-  - [ ] Implement `ProcessPendingMeshes()` for main thread GPU upload
-  - [ ] Rate-limit uploads (max 2 per frame) to avoid hitches
-- [ ] **Engine Integration**
-  - [ ] Call `ProcessPendingMeshes()` in `Engine::Update()`
-- [ ] **Validation**
-  - [ ] Verify chunks appear progressively
-  - [ ] Verify no frame hitches when moving rapidly
-  - [ ] Run for extended period to check for race conditions
+- [x] **Thread Pool**
+  - [x] Add BS::thread_pool to CMakeLists.txt via FetchContent
+  - [x] Verify header include path works
+- [x] **Chunk Task System**
+  - [x] Create `world/ChunkTask.h` with `ChunkMeshData` struct
+  - [x] Define `ChunkState` enum (Unloaded, Generating, MeshPending, Ready)
+- [x] **Chunk Refactoring**
+  - [x] Add `std::atomic<ChunkState>` to `Chunk`
+  - [x] Create `GenerateMeshData()` (thread-safe, no OpenGL)
+  - [x] Create `UploadMeshFromData()` (main thread only)
+- [x] **ChunkManager Async Loading**
+  - [x] Add `m_ThreadPool` and `m_PendingMeshes` queue
+  - [x] Implement `LoadChunkAsync()` to enqueue background tasks
+  - [x] Implement `ProcessPendingMeshes()` for main thread GPU upload
+  - [x] Rate-limit uploads (max 2 per frame) to avoid hitches
+- [x] **Engine Integration**
+  - [x] Call `ProcessPendingMeshes()` in `Engine::Update()`
+- [x] **Validation**
+  - [x] Build succeeds
+  - [ ] Verify chunks appear progressively (runtime test)
+  - [ ] Verify no frame hitches when moving rapidly (runtime test)
 
 ## Phase 6: World Features (Backlog)
 

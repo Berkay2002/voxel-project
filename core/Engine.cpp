@@ -178,6 +178,8 @@ void Engine::Update(float deltaTime) {
   // Update chunk loading based on camera position
   if (m_ChunkManager && m_Camera) {
     m_ChunkManager->Update(m_Camera->GetPosition());
+    // Process completed async mesh generations (upload to GPU on main thread)
+    m_ChunkManager->ProcessPendingMeshes();
   }
 }
 
