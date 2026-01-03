@@ -44,4 +44,9 @@ _Refer to `.agent/architecture_reference.md` for the full architectural breakdow
   - CMake build system with FetchContent (GLFW 3.4, GLAD, GLM 1.0.1)
   - Core engine loop: `Window`, `Engine`, `Logger`
   - OpenGL 4.6 context verified (tested on RTX 3090)
-- **Phase 2**: 🔜 Next (Shader, Camera, Texture systems)
+- **Phase 2**: ✅ Complete (2026-01-03)
+  - Shader system with uniform setters
+  - Buffer abstractions: VAO, VBO, EBO
+  - Texture system with stb_image
+  - Camera with WASD + mouse look
+- **Phase 3**: 🔜 Next (Chunk data, mesh generation, face culling)

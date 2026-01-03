@@ -17,25 +17,25 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
   - [x] Clear screen with teal color
   - [ ] Render a test triangle (sanity check)
 
-## Phase 2: Rendering Foundations (In Progress)
+## Phase 2: Rendering Foundations ✅
 
-- [ ] **Shader System**
-  - [ ] Implement `core/Shader.h/.cpp`
-  - [ ] Create `assets/shaders/basic.vert/frag`
-  - [ ] Create `assets/shaders/textured.vert/frag`
-- [ ] **Buffer Abstractions**
-  - [ ] Implement `core/VertexBuffer.h/.cpp`
-  - [ ] Implement `core/IndexBuffer.h/.cpp`
-  - [ ] Implement `core/VertexArray.h/.cpp`
-- [ ] **Colored Triangle** - Validate shaders + buffers
-- [ ] **Texture System**
-  - [ ] Add stb_image dependency
-  - [ ] Implement `core/Texture.h/.cpp`
-- [ ] **Textured Quad** - Validate textures + UVs
-- [ ] **Camera System**
-  - [ ] Implement `core/Camera.h/.cpp`
-  - [ ] WASD + mouse look controls
-- [ ] **Block Preview Cube** - Full 3D validation
+- [x] **Shader System**
+  - [x] Implement `core/Shader.h/.cpp`
+  - [x] Create `assets/shaders/basic.vert/frag`
+  - [x] Create `assets/shaders/textured.vert/frag`
+- [x] **Buffer Abstractions**
+  - [x] Implement `core/VertexBuffer.h/.cpp`
+  - [x] Implement `core/IndexBuffer.h/.cpp`
+  - [x] Implement `core/VertexArray.h/.cpp`
+- [x] **Colored Triangle** - Validated shaders + buffers
+- [x] **Texture System**
+  - [x] Add stb_image dependency
+  - [x] Implement `core/Texture.h/.cpp`
+- [x] **Textured Quad** - Validated textures + UVs
+- [x] **Camera System**
+  - [x] Implement `core/Camera.h/.cpp`
+  - [x] WASD + mouse look controls
+- [x] **Block Preview Cube** - Full 3D validation
 
 ## Phase 3: Voxel Basics (Backlog)
 
