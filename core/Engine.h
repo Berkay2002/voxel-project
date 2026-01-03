@@ -12,6 +12,14 @@ class IndexBuffer;
 class Texture;
 class Camera;
 
+} // namespace Core
+
+namespace Voxel {
+class Chunk;
+}
+
+namespace Core {
+
 class Engine {
 public:
   Engine();
@@ -28,7 +36,7 @@ public:
 private:
   void Update(float deltaTime);
   void Render();
-  void SetupCube();
+  void SetupChunk();  // Replaced SetupCube
   void ProcessInput(float deltaTime);
 
   std::unique_ptr<Window> m_Window;
@@ -41,6 +49,10 @@ private:
   std::unique_ptr<Texture> m_Texture;
   std::unique_ptr<Camera> m_Camera;
 
+  // Chunk system
+  std::unique_ptr<Voxel::Chunk> m_Chunk;
+  unsigned int m_ChunkIndexCount = 0;
+
   // Input state
   float m_LastX = 400.0f;
   float m_LastY = 300.0f;
@@ -49,3 +61,4 @@ private:
 };
 
 } // namespace Core
+

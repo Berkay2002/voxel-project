@@ -72,6 +72,8 @@ add_executable(${PROJECT_NAME}
     core/VertexArray.cpp
     core/Texture.cpp
     core/Camera.cpp
+    world/Chunk.cpp
+    world/ChunkMeshBuilder.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE

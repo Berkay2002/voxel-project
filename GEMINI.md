@@ -49,4 +49,9 @@ _Refer to `.agent/architecture_reference.md` for the full architectural breakdow
   - Buffer abstractions: VAO, VBO, EBO
   - Texture system with stb_image
   - Camera with WASD + mouse look
-- **Phase 3**: 🔜 Next (Chunk data, mesh generation, face culling)
+- **Phase 3A**: ✅ Complete (2026-01-03)
+  - Block types: Air, Dirt, Grass, Stone
+  - Chunk data structure (16×16×256)
+  - Mesh generation with face culling
+  - Single chunk rendering validated
+- **Phase 3B**: 🔜 Next (FastNoiseLite, terrain generation)

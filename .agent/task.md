@@ -37,9 +37,44 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
   - [x] WASD + mouse look controls
 - [x] **Block Preview Cube** - Full 3D validation
 
-## Phase 3: Voxel Basics (Backlog)
+## Phase 3A: Chunk Data & Single Chunk Rendering ✅
 
-- [ ] Face Culling
-- [ ] Multithreading
-- [ ] FastNoiseLite Integration
-- [ ] Infinite Terrain
+- [x] **Block System**
+  - [x] Create `world/Block.h` with BlockType enum (Air, Dirt, Grass, Stone)
+  - [x] Add `IsOpaque()` and UV helpers
+- [x] **Chunk Data Structure**
+  - [x] Create `world/Chunk.h/.cpp` (16×16×256)
+  - [x] 1D array storage with Get/Set accessors
+- [x] **Mesh Generation with Face Culling**
+  - [x] Create `world/ChunkMeshBuilder.h/.cpp`
+  - [x] Implement 6-face iteration with neighbor checks
+  - [x] Generate vertex data (pos, uv, normal)
+- [x] **Integration**
+  - [x] Update CMakeLists.txt for world/ sources
+  - [x] Update Engine.cpp to create and render test chunk
+- [x] **Validation**
+  - [x] Single chunk renders correctly
+  - [x] Internal faces are culled
+  - [x] Block textures display correctly
+
+## Phase 3B: Terrain Generation (Current)
+
+- [ ] **FastNoiseLite Integration**
+  - [ ] Add to CMakeLists.txt via FetchContent
+  - [ ] Verify include path works
+- [ ] **TerrainGenerator Class**
+  - [ ] Create `world/TerrainGenerator.h/.cpp`
+  - [ ] Configure Perlin noise (seed, frequency)
+  - [ ] `Generate(Chunk&)` method
+- [ ] **Block Layering Logic**
+  - [ ] Height calculation from noise
+  - [ ] Stone / Dirt / Grass layers
+- [ ] **Integration & Validation**
+  - [ ] Replace Engine.cpp manual terrain with TerrainGenerator
+  - [ ] Verify rolling hills render correctly
+
+## Phase 4: Optimization & World (Backlog)
+
+- [ ] Multithreading for chunk generation
+- [ ] ChunkManager for multi-chunk world
+- [ ] Infinite terrain loading

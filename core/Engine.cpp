@@ -8,6 +8,11 @@
 #include "core/VertexBuffer.h"
 #include "core/Window.h"
 
+// Voxel system
+#include "world/Block.h"
+#include "world/Chunk.h"
+#include "world/ChunkMeshBuilder.h"
+
 #include <glad/gl.h>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -49,11 +54,16 @@ Engine::Engine() {
   // Enable depth testing for 3D
   glEnable(GL_DEPTH_TEST);
 
-  // Create camera
-  m_Camera = std::make_unique<Camera>(glm::vec3(0.0f, 0.0f, 3.0f));
+  // Enable backface culling for performance
+  glEnable(GL_CULL_FACE);
+  glCullFace(GL_BACK);
+  glFrontFace(GL_CCW);
 
-  // Setup rendering resources
-  SetupCube();
+  // Create camera - position it to view the chunk
+  m_Camera = std::make_unique<Camera>(glm::vec3(8.0f, 20.0f, 30.0f));
+
+  // Setup chunk rendering
+  SetupChunk();
 
   LOG_INFO("Engine initialized successfully!");
   LOG_INFO("Controls: WASD to move, Space/Shift for up/down");
@@ -62,88 +72,83 @@ Engine::Engine() {
 
 Engine::~Engine() { LOG_INFO("Engine shutting down..."); }
 
-void Engine::SetupCube() {
-  // Cube vertices: position (x, y, z) + texture coords (u, v)
-  // clang-format off
-  float vertices[] = {
-    // Front face
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-    // Back face
-    -0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-     0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    // Top face
-    -0.5f,  0.5f, -0.5f,  0.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-    // Bottom face
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    // Right face
-     0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-    // Left face
-    -0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-  };
-  // clang-format on
+void Engine::SetupChunk() {
+  // Create and populate a test chunk with simple terrain
+  m_Chunk = std::make_unique<Voxel::Chunk>();
 
-  unsigned int indices[] = {
-      // Front
-      0, 1, 2, 2, 3, 0,
-      // Back
-      4, 5, 6, 6, 7, 4,
-      // Top
-      8, 9, 10, 10, 11, 8,
-      // Bottom
-      12, 13, 14, 14, 15, 12,
-      // Right
-      16, 17, 18, 18, 19, 16,
-      // Left
-      20, 21, 22, 22, 23, 20
-  };
+  // Generate simple height-based terrain
+  for (int x = 0; x < Voxel::CHUNK_WIDTH; ++x) {
+    for (int z = 0; z < Voxel::CHUNK_DEPTH; ++z) {
+      // Simple height variation (5-10 blocks high)
+      int height = 5 + (x + z) % 6;
+
+      for (int y = 0; y < height; ++y) {
+        if (y == height - 1) {
+          // Top layer is grass
+          m_Chunk->SetBlock(x, y, z, Voxel::BlockType::Grass);
+        } else if (y >= height - 4) {
+          // Next 3 layers are dirt
+          m_Chunk->SetBlock(x, y, z, Voxel::BlockType::Dirt);
+        } else {
+          // Everything below is stone
+          m_Chunk->SetBlock(x, y, z, Voxel::BlockType::Stone);
+        }
+      }
+    }
+  }
+
+  // Build mesh from chunk data with face culling
+  Voxel::ChunkMeshBuilder meshBuilder;
+  Voxel::ChunkMesh mesh = meshBuilder.BuildMesh(*m_Chunk);
+
+  LOG_INFO("Chunk mesh built: " + std::to_string(mesh.vertices.size()) + 
+           " vertices, " + std::to_string(mesh.indices.size()) + " indices");
+  LOG_INFO("Face culling reduced faces to only visible surfaces!");
+
+  if (mesh.IsEmpty()) {
+    LOG_ERROR("Chunk mesh is empty!");
+    return;
+  }
 
   // Create textured shader
   m_Shader = std::make_unique<Shader>("assets/shaders/textured.vert",
                                        "assets/shaders/textured.frag");
 
   if (!m_Shader->IsValid()) {
-    LOG_ERROR("Failed to create shader for cube");
+    LOG_ERROR("Failed to create shader for chunk");
     return;
   }
 
-  // Load texture (using grass block for the cube)
+  // Load texture (using grass block for now - single texture for all blocks)
   m_Texture = std::make_unique<Texture>("assets/textures/blocks/grass_block.png");
 
   if (!m_Texture->IsValid()) {
-    LOG_ERROR("Failed to load texture for cube");
+    LOG_ERROR("Failed to load texture for chunk");
     return;
   }
 
   // Create VAO
   m_VAO = std::make_unique<VertexArray>();
 
-  // Create VBO
-  m_VBO = std::make_unique<VertexBuffer>(vertices, sizeof(vertices));
+  // Create VBO from mesh vertices
+  // ChunkVertex has: vec3 position (12 bytes) + vec2 uv (8 bytes) + vec3 normal (12 bytes) = 32 bytes
+  m_VBO = std::make_unique<VertexBuffer>(
+      mesh.vertices.data(),
+      mesh.vertices.size() * sizeof(Voxel::ChunkVertex));
 
-  // Create IBO
-  m_IBO = std::make_unique<IndexBuffer>(indices, 36);
+  // Create IBO from mesh indices
+  m_IBO = std::make_unique<IndexBuffer>(
+      mesh.indices.data(),
+      static_cast<unsigned int>(mesh.indices.size()));
 
-  // Setup vertex attributes: position (3 floats) + texcoord (2 floats)
+  m_ChunkIndexCount = static_cast<unsigned int>(mesh.indices.size());
+
+  // Setup vertex attributes: position (3 floats) + uv (2 floats) + normal (3 floats)
+  // Stride = sizeof(ChunkVertex) = 32 bytes
   std::vector<VertexAttribute> attributes = {
-      {0, 3, GL_FLOAT, false, 5 * sizeof(float), 0},                     // Position
-      {1, 2, GL_FLOAT, false, 5 * sizeof(float), 3 * sizeof(float)}      // TexCoord
+      {0, 3, GL_FLOAT, false, sizeof(Voxel::ChunkVertex), 0},                        // Position
+      {1, 2, GL_FLOAT, false, sizeof(Voxel::ChunkVertex), offsetof(Voxel::ChunkVertex, uv)},    // UV
+      {2, 3, GL_FLOAT, false, sizeof(Voxel::ChunkVertex), offsetof(Voxel::ChunkVertex, normal)} // Normal
   };
   m_VAO->AddVertexBuffer(*m_VBO, attributes);
 
@@ -157,7 +162,8 @@ void Engine::SetupCube() {
   m_Shader->SetInt("u_Texture", 0);
   m_Shader->Unbind();
 
-  LOG_INFO("3D Cube setup complete");
+  LOG_INFO("Chunk setup complete - rendering " + 
+           std::to_string(m_ChunkIndexCount / 3) + " triangles");
 }
 
 void Engine::ProcessInput(float deltaTime) {
@@ -242,8 +248,8 @@ void Engine::Update(float deltaTime) {
 }
 
 void Engine::Render() {
-  // Clear with teal color
-  glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+  // Clear with sky blue color
+  glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   if (m_Shader && m_Shader->IsValid() && m_VAO && m_IBO && m_Texture && m_Camera) {
@@ -253,20 +259,17 @@ void Engine::Render() {
     float aspectRatio = static_cast<float>(m_Window->GetWidth()) / 
                         static_cast<float>(m_Window->GetHeight());
     
+    // No model transformation needed - chunk is at origin
     glm::mat4 model = glm::mat4(1.0f);
-    // Rotate the cube slowly for visual effect
-    model = glm::rotate(model, static_cast<float>(glfwGetTime()) * 0.5f, 
-                        glm::vec3(0.0f, 1.0f, 0.0f));
-    
     glm::mat4 mvp = m_Camera->GetViewProjectionMatrix(aspectRatio) * model;
     m_Shader->SetMat4("u_MVP", mvp);
 
     // Bind texture
     m_Texture->Bind(0);
 
-    // Draw cube
+    // Draw chunk
     m_VAO->Bind();
-    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(m_IBO->GetCount()),
+    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(m_ChunkIndexCount),
                    GL_UNSIGNED_INT, nullptr);
     m_VAO->Unbind();
 
