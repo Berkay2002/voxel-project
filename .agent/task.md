@@ -17,15 +17,27 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
   - [x] Clear screen with teal color
   - [ ] Render a test triangle (sanity check)
 
-## Phase 2: Voxel Basics (Backlog)
+## Phase 2: Rendering Foundations (In Progress)
 
-- [ ] Shader System (`Shader.h`)
-- [ ] Camera System (`Camera.h`)
-- [ ] Texture System (`Texture.h`)
-- [ ] Chunk Data Structure
-- [ ] Basic Mesh Generation
+- [ ] **Shader System**
+  - [ ] Implement `core/Shader.h/.cpp`
+  - [ ] Create `assets/shaders/basic.vert/frag`
+  - [ ] Create `assets/shaders/textured.vert/frag`
+- [ ] **Buffer Abstractions**
+  - [ ] Implement `core/VertexBuffer.h/.cpp`
+  - [ ] Implement `core/IndexBuffer.h/.cpp`
+  - [ ] Implement `core/VertexArray.h/.cpp`
+- [ ] **Colored Triangle** - Validate shaders + buffers
+- [ ] **Texture System**
+  - [ ] Add stb_image dependency
+  - [ ] Implement `core/Texture.h/.cpp`
+- [ ] **Textured Quad** - Validate textures + UVs
+- [ ] **Camera System**
+  - [ ] Implement `core/Camera.h/.cpp`
+  - [ ] WASD + mouse look controls
+- [ ] **Block Preview Cube** - Full 3D validation
 
-## Phase 3: Advanced Features (Backlog)
+## Phase 3: Voxel Basics (Backlog)
 
 - [ ] Face Culling
 - [ ] Multithreading

@@ -5,6 +5,10 @@
 namespace Core {
 
 class Window;
+class Shader;
+class VertexArray;
+class VertexBuffer;
+class IndexBuffer;
 
 class Engine {
 public:
@@ -22,8 +26,15 @@ public:
 private:
   void Update();
   void Render();
+  void SetupTriangle();
 
   std::unique_ptr<Window> m_Window;
+  
+  // Rendering resources
+  std::unique_ptr<Shader> m_Shader;
+  std::unique_ptr<VertexArray> m_VAO;
+  std::unique_ptr<VertexBuffer> m_VBO;
+  std::unique_ptr<IndexBuffer> m_IBO;
 };
 
 } // namespace Core

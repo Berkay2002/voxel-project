@@ -51,6 +51,14 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(glad)
 glad_add_library(glad_gl_core_46 REPRODUCIBLE API gl:core=4.6)
 
+# stb_image (header-only image loading)
+FetchContent_Declare(
+    stb
+    GIT_REPOSITORY https://github.com/nothings/stb.git
+    GIT_TAG        master
+)
+FetchContent_MakeAvailable(stb)
+
 # ============================================================================
 # Executable
 # ============================================================================
@@ -58,6 +66,10 @@ add_executable(${PROJECT_NAME}
     main.cpp
     core/Window.cpp
     core/Engine.cpp
+    core/Shader.cpp
+    core/VertexBuffer.cpp
+    core/IndexBuffer.cpp
+    core/VertexArray.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
@@ -67,3 +79,14 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     glm::glm
     glad_gl_core_46
 )
+
+# ============================================================================
+# Copy assets to build directory
+# ============================================================================
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/assets
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>/assets
+    COMMENT "Copying assets to build directory"
+)
+
