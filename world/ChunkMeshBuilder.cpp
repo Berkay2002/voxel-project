@@ -18,41 +18,37 @@ ChunkMesh ChunkMeshBuilder::BuildMesh(const Chunk& chunk) {
                     continue;
                 }
 
-                glm::vec3 position(static_cast<float>(x), 
-                                   static_cast<float>(y), 
-                                   static_cast<float>(z));
-
                 // Check each face for visibility (face culling)
                 // Only add face if neighbor is Air (or out of bounds)
                 
                 // Top face (+Y)
                 if (!IsOpaque(chunk.GetNeighborBlock(x, y, z, Face::Top))) {
-                    AddFace(mesh, position, Face::Top, block);
+                    AddFace(mesh, chunk, x, y, z, Face::Top, block);
                 }
 
                 // Bottom face (-Y)
                 if (!IsOpaque(chunk.GetNeighborBlock(x, y, z, Face::Bottom))) {
-                    AddFace(mesh, position, Face::Bottom, block);
+                    AddFace(mesh, chunk, x, y, z, Face::Bottom, block);
                 }
 
                 // North face (+Z)
                 if (!IsOpaque(chunk.GetNeighborBlock(x, y, z, Face::North))) {
-                    AddFace(mesh, position, Face::North, block);
+                    AddFace(mesh, chunk, x, y, z, Face::North, block);
                 }
 
                 // South face (-Z)
                 if (!IsOpaque(chunk.GetNeighborBlock(x, y, z, Face::South))) {
-                    AddFace(mesh, position, Face::South, block);
+                    AddFace(mesh, chunk, x, y, z, Face::South, block);
                 }
 
                 // East face (+X)
                 if (!IsOpaque(chunk.GetNeighborBlock(x, y, z, Face::East))) {
-                    AddFace(mesh, position, Face::East, block);
+                    AddFace(mesh, chunk, x, y, z, Face::East, block);
                 }
 
                 // West face (-X)
                 if (!IsOpaque(chunk.GetNeighborBlock(x, y, z, Face::West))) {
-                    AddFace(mesh, position, Face::West, block);
+                    AddFace(mesh, chunk, x, y, z, Face::West, block);
                 }
             }
         }
@@ -62,9 +58,14 @@ ChunkMesh ChunkMeshBuilder::BuildMesh(const Chunk& chunk) {
 }
 
 void ChunkMeshBuilder::AddFace(ChunkMesh& mesh, 
-                                const glm::vec3& position, 
+                                const Chunk& chunk,
+                                int x, int y, int z,
                                 Face face, 
                                 BlockType blockType) {
+    glm::vec3 position(static_cast<float>(x), 
+                       static_cast<float>(y), 
+                       static_cast<float>(z));
+
     // Get the 4 vertices for this face
     glm::vec3 vertices[4];
     GetFaceVertices(face, position, vertices);
@@ -76,12 +77,16 @@ void ChunkMeshBuilder::AddFace(ChunkMesh& mesh,
     // Get normal for this face
     glm::vec3 normal = GetFaceNormal(face);
 
+    // Calculate ambient occlusion for each vertex
+    float ao[4];
+    CalculateFaceAO(chunk, x, y, z, face, ao);
+
     // Current vertex index before adding new vertices
     unsigned int baseIndex = static_cast<unsigned int>(mesh.vertices.size());
 
     // Add 4 vertices for the face
     for (int i = 0; i < 4; ++i) {
-        mesh.vertices.push_back({vertices[i], uvs[i], normal});
+        mesh.vertices.push_back({vertices[i], uvs[i], normal, ao[i]});
     }
 
     // Add 2 triangles (6 indices) for the face
@@ -163,6 +168,200 @@ glm::vec3 ChunkMeshBuilder::GetFaceNormal(Face face) {
         case Face::East:   return glm::vec3( 1,  0,  0);
         case Face::West:   return glm::vec3(-1,  0,  0);
         default:           return glm::vec3( 0,  1,  0);
+    }
+}
+
+bool ChunkMeshBuilder::IsBlockOpaque(const Chunk& chunk, int x, int y, int z) {
+    // Out of bounds is considered transparent (no occlusion)
+    if (x < 0 || x >= CHUNK_WIDTH ||
+        y < 0 || y >= CHUNK_HEIGHT ||
+        z < 0 || z >= CHUNK_DEPTH) {
+        return false;
+    }
+    return IsOpaque(chunk.GetBlock(x, y, z));
+}
+
+float ChunkMeshBuilder::CalculateVertexAO(bool side1, bool side2, bool corner) {
+    // Standard Minecraft-style ambient occlusion formula
+    // If both sides are occluded, the corner is fully dark (prevents light bleeding)
+    if (side1 && side2) {
+        return 0.2f;  // Minimum AO to avoid pure black
+    }
+    // Count occluding neighbors: 0, 1, 2, or 3
+    int occluders = (side1 ? 1 : 0) + (side2 ? 1 : 0) + (corner ? 1 : 0);
+    // Map to AO values: 3->0.2, 2->0.5, 1->0.75, 0->1.0
+    return 1.0f - (occluders * 0.25f) + 0.05f;
+}
+
+void ChunkMeshBuilder::CalculateFaceAO(const Chunk& chunk, int x, int y, int z, 
+                                        Face face, float outAO[4]) {
+    // For each vertex of the face, check 3 neighbors:
+    // - 2 edge-adjacent blocks (sides)
+    // - 1 corner-adjacent block
+    // The vertex order matches GetFaceVertices()
+
+    switch (face) {
+        case Face::Top: // +Y face, vertices at corners of the top of the block
+            // Vertex 0: (x, y+1, z) - corner at (-x, +y, -z)
+            outAO[0] = CalculateVertexAO(
+                IsBlockOpaque(chunk, x-1, y+1, z),   // side1: -X
+                IsBlockOpaque(chunk, x, y+1, z-1),   // side2: -Z
+                IsBlockOpaque(chunk, x-1, y+1, z-1)  // corner: -X,-Z
+            );
+            // Vertex 1: (x, y+1, z+1) - corner at (-x, +y, +z)
+            outAO[1] = CalculateVertexAO(
+                IsBlockOpaque(chunk, x-1, y+1, z),   // side1: -X
+                IsBlockOpaque(chunk, x, y+1, z+1),   // side2: +Z
+                IsBlockOpaque(chunk, x-1, y+1, z+1)  // corner: -X,+Z
+            );
+            // Vertex 2: (x+1, y+1, z+1) - corner at (+x, +y, +z)
+            outAO[2] = CalculateVertexAO(
+                IsBlockOpaque(chunk, x+1, y+1, z),   // side1: +X
+                IsBlockOpaque(chunk, x, y+1, z+1),   // side2: +Z
+                IsBlockOpaque(chunk, x+1, y+1, z+1)  // corner: +X,+Z
+            );
+            // Vertex 3: (x+1, y+1, z) - corner at (+x, +y, -z)
+            outAO[3] = CalculateVertexAO(
+                IsBlockOpaque(chunk, x+1, y+1, z),   // side1: +X
+                IsBlockOpaque(chunk, x, y+1, z-1),   // side2: -Z
+                IsBlockOpaque(chunk, x+1, y+1, z-1)  // corner: +X,-Z
+            );
+            break;
+
+        case Face::Bottom: // -Y face
+            // Vertex 0: (x, y, z+1)
+            outAO[0] = CalculateVertexAO(
+                IsBlockOpaque(chunk, x-1, y-1, z),
+                IsBlockOpaque(chunk, x, y-1, z+1),
+                IsBlockOpaque(chunk, x-1, y-1, z+1)
+            );
+            // Vertex 1: (x, y, z)
+            outAO[1] = CalculateVertexAO(
+                IsBlockOpaque(chunk, x-1, y-1, z),
+                IsBlockOpaque(chunk, x, y-1, z-1),
+                IsBlockOpaque(chunk, x-1, y-1, z-1)
+            );
+            // Vertex 2: (x+1, y, z)
+            outAO[2] = CalculateVertexAO(
+                IsBlockOpaque(chunk, x+1, y-1, z),
+                IsBlockOpaque(chunk, x, y-1, z-1),
+                IsBlockOpaque(chunk, x+1, y-1, z-1)
+            );
+            // Vertex 3: (x+1, y, z+1)
+            outAO[3] = CalculateVertexAO(
+                IsBlockOpaque(chunk, x+1, y-1, z),
+                IsBlockOpaque(chunk, x, y-1, z+1),
+                IsBlockOpaque(chunk, x+1, y-1, z+1)
+            );
+            break;
+
+        case Face::North: // +Z face
+            // Vertex 0: (x+1, y, z+1)
+            outAO[0] = CalculateVertexAO(
+                IsBlockOpaque(chunk, x+1, y, z+1),
+                IsBlockOpaque(chunk, x, y-1, z+1),
+                IsBlockOpaque(chunk, x+1, y-1, z+1)
+            );
+            // Vertex 1: (x+1, y+1, z+1)
+            outAO[1] = CalculateVertexAO(
+                IsBlockOpaque(chunk, x+1, y, z+1),
+                IsBlockOpaque(chunk, x, y+1, z+1),
+                IsBlockOpaque(chunk, x+1, y+1, z+1)
+            );
+            // Vertex 2: (x, y+1, z+1)
+            outAO[2] = CalculateVertexAO(
+                IsBlockOpaque(chunk, x-1, y, z+1),
+                IsBlockOpaque(chunk, x, y+1, z+1),
+                IsBlockOpaque(chunk, x-1, y+1, z+1)
+            );
+            // Vertex 3: (x, y, z+1)
+            outAO[3] = CalculateVertexAO(
+                IsBlockOpaque(chunk, x-1, y, z+1),
+                IsBlockOpaque(chunk, x, y-1, z+1),
+                IsBlockOpaque(chunk, x-1, y-1, z+1)
+            );
+            break;
+
+        case Face::South: // -Z face
+            // Vertex 0: (x, y, z)
+            outAO[0] = CalculateVertexAO(
+                IsBlockOpaque(chunk, x-1, y, z-1),
+                IsBlockOpaque(chunk, x, y-1, z-1),
+                IsBlockOpaque(chunk, x-1, y-1, z-1)
+            );
+            // Vertex 1: (x, y+1, z)
+            outAO[1] = CalculateVertexAO(
+                IsBlockOpaque(chunk, x-1, y, z-1),
+                IsBlockOpaque(chunk, x, y+1, z-1),
+                IsBlockOpaque(chunk, x-1, y+1, z-1)
+            );
+            // Vertex 2: (x+1, y+1, z)
+            outAO[2] = CalculateVertexAO(
+                IsBlockOpaque(chunk, x+1, y, z-1),
+                IsBlockOpaque(chunk, x, y+1, z-1),
+                IsBlockOpaque(chunk, x+1, y+1, z-1)
+            );
+            // Vertex 3: (x+1, y, z)
+            outAO[3] = CalculateVertexAO(
+                IsBlockOpaque(chunk, x+1, y, z-1),
+                IsBlockOpaque(chunk, x, y-1, z-1),
+                IsBlockOpaque(chunk, x+1, y-1, z-1)
+            );
+            break;
+
+        case Face::East: // +X face
+            // Vertex 0: (x+1, y, z)
+            outAO[0] = CalculateVertexAO(
+                IsBlockOpaque(chunk, x+1, y, z-1),
+                IsBlockOpaque(chunk, x+1, y-1, z),
+                IsBlockOpaque(chunk, x+1, y-1, z-1)
+            );
+            // Vertex 1: (x+1, y+1, z)
+            outAO[1] = CalculateVertexAO(
+                IsBlockOpaque(chunk, x+1, y, z-1),
+                IsBlockOpaque(chunk, x+1, y+1, z),
+                IsBlockOpaque(chunk, x+1, y+1, z-1)
+            );
+            // Vertex 2: (x+1, y+1, z+1)
+            outAO[2] = CalculateVertexAO(
+                IsBlockOpaque(chunk, x+1, y, z+1),
+                IsBlockOpaque(chunk, x+1, y+1, z),
+                IsBlockOpaque(chunk, x+1, y+1, z+1)
+            );
+            // Vertex 3: (x+1, y, z+1)
+            outAO[3] = CalculateVertexAO(
+                IsBlockOpaque(chunk, x+1, y, z+1),
+                IsBlockOpaque(chunk, x+1, y-1, z),
+                IsBlockOpaque(chunk, x+1, y-1, z+1)
+            );
+            break;
+
+        case Face::West: // -X face
+            // Vertex 0: (x, y, z+1)
+            outAO[0] = CalculateVertexAO(
+                IsBlockOpaque(chunk, x-1, y, z+1),
+                IsBlockOpaque(chunk, x-1, y-1, z),
+                IsBlockOpaque(chunk, x-1, y-1, z+1)
+            );
+            // Vertex 1: (x, y+1, z+1)
+            outAO[1] = CalculateVertexAO(
+                IsBlockOpaque(chunk, x-1, y, z+1),
+                IsBlockOpaque(chunk, x-1, y+1, z),
+                IsBlockOpaque(chunk, x-1, y+1, z+1)
+            );
+            // Vertex 2: (x, y+1, z)
+            outAO[2] = CalculateVertexAO(
+                IsBlockOpaque(chunk, x-1, y, z-1),
+                IsBlockOpaque(chunk, x-1, y+1, z),
+                IsBlockOpaque(chunk, x-1, y+1, z-1)
+            );
+            // Vertex 3: (x, y, z)
+            outAO[3] = CalculateVertexAO(
+                IsBlockOpaque(chunk, x-1, y, z-1),
+                IsBlockOpaque(chunk, x-1, y-1, z),
+                IsBlockOpaque(chunk, x-1, y-1, z-1)
+            );
+            break;
     }
 }
 

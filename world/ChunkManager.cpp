@@ -194,6 +194,7 @@ void ChunkManager::RenderAll(Core::Shader& shader, Core::Camera& camera, float a
         glm::mat4 mvp = viewProj * model;
         
         shader.SetMat4("u_MVP", mvp);
+        shader.SetMat4("u_Model", model);  // For normal transformation
         
         chunk->Render();
         renderedCount++;

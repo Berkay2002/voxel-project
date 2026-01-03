@@ -67,9 +67,9 @@ Engine::Engine() {
 Engine::~Engine() { LOG_INFO("Engine shutting down..."); }
 
 void Engine::SetupWorld() {
-  // Create textured shader
-  m_Shader = std::make_unique<Shader>("assets/shaders/textured.vert",
-                                       "assets/shaders/textured.frag");
+  // Create lit shader with lighting support
+  m_Shader = std::make_unique<Shader>("assets/shaders/lit.vert",
+                                       "assets/shaders/lit.frag");
 
   if (!m_Shader->IsValid()) {
     LOG_ERROR("Failed to create shader for world");
@@ -84,15 +84,19 @@ void Engine::SetupWorld() {
     return;
   }
 
-  // Set texture uniform
+  // Set shader uniforms
   m_Shader->Bind();
   m_Shader->SetInt("u_Texture", 0);
+  // Sun direction: slightly angled from above-right
+  m_Shader->SetVec3("u_LightDir", glm::normalize(glm::vec3(0.5f, 1.0f, 0.3f)));
+  // Ambient strength: prevents pure black shadows
+  m_Shader->SetFloat("u_AmbientStrength", 0.35f);
   m_Shader->Unbind();
 
   // Create chunk manager
   m_ChunkManager = std::make_unique<Voxel::ChunkManager>();
 
-  LOG_INFO("World setup complete with ChunkManager");
+  LOG_INFO("World setup complete with ChunkManager and lighting");
 }
 
 void Engine::ProcessInput(float deltaTime) {

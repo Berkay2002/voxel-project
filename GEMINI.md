@@ -27,7 +27,7 @@ The `.agent` directory serves as the persistent "brain" and memory for AI agents
 
 ## Architecture & Considerations
 
-- **Modular Core**: The engine (`core/`) must be decoupled from the game logic (`game/`).
+- **Modular Core**: The engine (`core/`) must be decoupled from the game logic (`world/`).
 - **Voxel Data**: Chunks are 16x16x256. stored as 1D/3D arrays.
 - **Optimization**:
   - Aggressive Face Culling (never render internal faces).
@@ -68,4 +68,14 @@ _Refer to `.agent/architecture_reference.md` for the full architectural breakdow
   - BS::thread_pool for async chunk generation
   - Separated mesh generation (worker) from GPU upload (main thread)
   - Rate-limited uploads (2 per frame) to avoid hitches
-- **Phase 6**: 🔜 Next (Water, caves, more blocks, lighting)
+- **Phase 6**: ✅ Complete (2026-01-03)
+  - Directional sun lighting with ambient light
+  - Per-vertex ambient occlusion
+- **Phase 7**: 🔜 Next (Water System)
+  - Water BlockType at sea level
+  - Transparent rendering with alpha blending
+  - Animated water UVs (optional)
+- **Phase 8**: Backlog (World Features)
+  - Cave generation with 3D Perlin noise
+  - More block types (Sand, Gravel, Cobblestone)
+  - Texture atlas for multiple block textures

@@ -135,18 +135,47 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
   - [ ] Verify chunks appear progressively (runtime test)
   - [ ] Verify no frame hitches when moving rapidly (runtime test)
 
-## Phase 6: World Features (Backlog)
+## Phase 6: Lighting ✅
 
-- [ ] **Water System**
-  - [ ] Water BlockType at sea level
-  - [ ] Transparent rendering (alpha blending)
-  - [ ] Animated water UVs (optional)
+- [x] **Shader System Update**
+  - [x] Create `assets/shaders/lit.vert` with normal passing
+  - [x] Create `assets/shaders/lit.frag` with diffuse + ambient lighting
+  - [x] Add `u_LightDir` and `u_AmbientStrength` uniforms
+- [x] **Engine Integration**
+  - [x] Load new lit shader in `Engine.cpp`
+  - [x] Set light direction uniform (sun angle)
+  - [x] Set ambient strength uniform
+- [x] **Per-Vertex Ambient Occlusion**
+  - [x] Add `float ao` field to `ChunkVertex` struct
+  - [x] Calculate AO per vertex in `ChunkMeshBuilder`
+  - [x] Pass AO to fragment shader and apply to lighting
+- [x] **Validation**
+  - [x] Build succeeds
+  - [x] Blocks show directional shading (lighter tops, darker sides)
+  - [x] AO creates subtle shadows in corners/edges
+
+## Phase 7: Water System (Backlog)
+
+- [ ] **Water BlockType**
+  - [ ] Add `Water` to `BlockType` enum
+  - [ ] Set `IsOpaque()` to false for water
+  - [ ] Generate water at fixed sea level (e.g., Y=40)
+- [ ] **Transparent Rendering**
+  - [ ] Create `assets/shaders/water.vert/frag`
+  - [ ] Enable alpha blending for water pass
+  - [ ] Render opaque chunks first, then water chunks
+- [ ] **Visual Polish** (Optional)
+  - [ ] Animated water UVs
+  - [ ] Blue tint vertex color
+
+## Phase 8: World Features (Backlog)
+
 - [ ] **Cave Generation**
   - [ ] 3D Perlin noise for cave carving
-  - [ ] Ore vein distribution
+  - [ ] Ore vein distribution at specific depths
 - [ ] **More Block Types**
   - [ ] Sand, Gravel, Cobblestone
   - [ ] Texture atlas for multiple block textures
-- [ ] **Lighting**
-  - [ ] Basic ambient + directional sun
-  - [ ] Per-vertex ambient occlusion
+- [ ] **Advanced Lighting** (Optional)
+  - [ ] Sunlight propagation
+  - [ ] Block light sources (torches)

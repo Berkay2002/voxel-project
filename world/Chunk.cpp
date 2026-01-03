@@ -94,6 +94,11 @@ void Chunk::BuildMesh() {
                           (void*)offsetof(ChunkVertex, normal));
     glEnableVertexAttribArray(2);
 
+    // AO attribute (location 3)
+    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), 
+                          (void*)offsetof(ChunkVertex, ao));
+    glEnableVertexAttribArray(3);
+
     // Upload index data
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_IBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,
@@ -146,8 +151,8 @@ ChunkMeshData Chunk::GenerateMeshData() const {
     }
     
     // Convert ChunkVertex array to flat float array for GPU upload
-    // Layout: position (3) + uv (2) + normal (3) = 8 floats per vertex
-    data.vertices.reserve(mesh.vertices.size() * 8);
+    // Layout: position (3) + uv (2) + normal (3) + ao (1) = 9 floats per vertex
+    data.vertices.reserve(mesh.vertices.size() * 9);
     for (const auto& vertex : mesh.vertices) {
         data.vertices.push_back(vertex.position.x);
         data.vertices.push_back(vertex.position.y);
@@ -157,6 +162,7 @@ ChunkMeshData Chunk::GenerateMeshData() const {
         data.vertices.push_back(vertex.normal.x);
         data.vertices.push_back(vertex.normal.y);
         data.vertices.push_back(vertex.normal.z);
+        data.vertices.push_back(vertex.ao);
     }
     
     data.indices = std::move(mesh.indices);
@@ -189,8 +195,8 @@ void Chunk::UploadMeshFromData(const ChunkMeshData& data) {
                  data.vertices.data(), 
                  GL_STATIC_DRAW);
     
-    // Vertex layout: position (3) + uv (2) + normal (3) = 8 floats = 32 bytes stride
-    constexpr GLsizei stride = 8 * sizeof(float);
+    // Vertex layout: position (3) + uv (2) + normal (3) + ao (1) = 9 floats = 36 bytes stride
+    constexpr GLsizei stride = 9 * sizeof(float);
     
     // Position attribute (location 0)
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
@@ -203,6 +209,10 @@ void Chunk::UploadMeshFromData(const ChunkMeshData& data) {
     // Normal attribute (location 2)
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride, (void*)(5 * sizeof(float)));
     glEnableVertexAttribArray(2);
+    
+    // AO attribute (location 3)
+    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, stride, (void*)(8 * sizeof(float)));
+    glEnableVertexAttribArray(3);
     
     // Upload index data
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_IBO);
