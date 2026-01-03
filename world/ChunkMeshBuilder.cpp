@@ -2,10 +2,12 @@
 
 namespace Voxel {
 
-ChunkMesh ChunkMeshBuilder::BuildMesh(const Chunk& chunk) {
-    ChunkMesh mesh;
-    mesh.vertices.reserve(CHUNK_VOLUME * 6);  // Rough estimate, will resize as needed
-    mesh.indices.reserve(CHUNK_VOLUME * 6);
+ChunkMeshResult ChunkMeshBuilder::BuildMesh(const Chunk& chunk) {
+    ChunkMeshResult result;
+    result.opaqueMesh.vertices.reserve(CHUNK_VOLUME * 4);  // Rough estimate
+    result.opaqueMesh.indices.reserve(CHUNK_VOLUME * 6);
+    result.waterMesh.vertices.reserve(CHUNK_VOLUME);  // Water is typically less common
+    result.waterMesh.indices.reserve(CHUNK_VOLUME);
 
     // Iterate through all blocks in the chunk
     for (int y = 0; y < CHUNK_HEIGHT; ++y) {
@@ -18,43 +20,59 @@ ChunkMesh ChunkMeshBuilder::BuildMesh(const Chunk& chunk) {
                     continue;
                 }
 
+                // Determine which mesh to add faces to
+                bool isWater = IsTransparent(block);
+                ChunkMesh& targetMesh = isWater ? result.waterMesh : result.opaqueMesh;
+
                 // Check each face for visibility (face culling)
-                // Only add face if neighbor is Air (or out of bounds)
+                // For opaque blocks: only add face if neighbor is NOT opaque
+                // For water blocks: only add TOP face if neighbor is Air
+                //                   Skip side/bottom faces at chunk boundaries (assume water continues)
                 
-                // Top face (+Y)
-                if (!IsOpaque(chunk.GetNeighborBlock(x, y, z, Face::Top))) {
-                    AddFace(mesh, chunk, x, y, z, Face::Top, block);
+                // Top face (+Y) - always render for water if air above
+                BlockType neighborTop = chunk.GetNeighborBlock(x, y, z, Face::Top);
+                if (isWater ? (neighborTop == BlockType::Air) : !IsOpaque(neighborTop)) {
+                    AddFace(targetMesh, chunk, x, y, z, Face::Top, block);
                 }
 
-                // Bottom face (-Y)
-                if (!IsOpaque(chunk.GetNeighborBlock(x, y, z, Face::Bottom))) {
-                    AddFace(mesh, chunk, x, y, z, Face::Bottom, block);
+                // Bottom face (-Y) - Skip for water entirely
+                BlockType neighborBottom = chunk.GetNeighborBlock(x, y, z, Face::Bottom);
+                if (isWater ? false : !IsOpaque(neighborBottom)) {
+                    AddFace(targetMesh, chunk, x, y, z, Face::Bottom, block);
                 }
 
-                // North face (+Z)
-                if (!IsOpaque(chunk.GetNeighborBlock(x, y, z, Face::North))) {
-                    AddFace(mesh, chunk, x, y, z, Face::North, block);
+                // North face (+Z) - For water, only render if NOT at chunk boundary
+                BlockType neighborNorth = chunk.GetNeighborBlock(x, y, z, Face::North);
+                bool northAtBoundary = (z == CHUNK_DEPTH - 1);
+                if (isWater ? (!northAtBoundary && neighborNorth == BlockType::Air) : !IsOpaque(neighborNorth)) {
+                    AddFace(targetMesh, chunk, x, y, z, Face::North, block);
                 }
 
-                // South face (-Z)
-                if (!IsOpaque(chunk.GetNeighborBlock(x, y, z, Face::South))) {
-                    AddFace(mesh, chunk, x, y, z, Face::South, block);
+                // South face (-Z) - For water, only render if NOT at chunk boundary
+                BlockType neighborSouth = chunk.GetNeighborBlock(x, y, z, Face::South);
+                bool southAtBoundary = (z == 0);
+                if (isWater ? (!southAtBoundary && neighborSouth == BlockType::Air) : !IsOpaque(neighborSouth)) {
+                    AddFace(targetMesh, chunk, x, y, z, Face::South, block);
                 }
 
-                // East face (+X)
-                if (!IsOpaque(chunk.GetNeighborBlock(x, y, z, Face::East))) {
-                    AddFace(mesh, chunk, x, y, z, Face::East, block);
+                // East face (+X) - For water, only render if NOT at chunk boundary
+                BlockType neighborEast = chunk.GetNeighborBlock(x, y, z, Face::East);
+                bool eastAtBoundary = (x == CHUNK_WIDTH - 1);
+                if (isWater ? (!eastAtBoundary && neighborEast == BlockType::Air) : !IsOpaque(neighborEast)) {
+                    AddFace(targetMesh, chunk, x, y, z, Face::East, block);
                 }
 
-                // West face (-X)
-                if (!IsOpaque(chunk.GetNeighborBlock(x, y, z, Face::West))) {
-                    AddFace(mesh, chunk, x, y, z, Face::West, block);
+                // West face (-X) - For water, only render if NOT at chunk boundary
+                BlockType neighborWest = chunk.GetNeighborBlock(x, y, z, Face::West);
+                bool westAtBoundary = (x == 0);
+                if (isWater ? (!westAtBoundary && neighborWest == BlockType::Air) : !IsOpaque(neighborWest)) {
+                    AddFace(targetMesh, chunk, x, y, z, Face::West, block);
                 }
             }
         }
     }
 
-    return mesh;
+    return result;
 }
 
 void ChunkMeshBuilder::AddFace(ChunkMesh& mesh, 

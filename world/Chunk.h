@@ -60,9 +60,14 @@ public:
     // Upload pre-generated mesh data to GPU (main thread only!)
     void UploadMeshFromData(const ChunkMeshData& data);
     
-    // Render this chunk's mesh
+    // Render this chunk's mesh (opaque geometry)
     void Render() const;
     unsigned int GetIndexCount() const { return m_IndexCount; }
+    
+    // Render this chunk's water mesh (transparent geometry)
+    void RenderWater() const;
+    bool HasWaterMesh() const { return m_HasWaterMesh; }
+    unsigned int GetWaterIndexCount() const { return m_WaterIndexCount; }
 
 private:
     // Convert 3D coordinates to 1D array index
@@ -81,12 +86,19 @@ private:
     // Thread-safe state for async loading
     std::atomic<ChunkState> m_State{ChunkState::Unloaded};
 
-    // GPU mesh resources (owned by chunk)
+    // GPU mesh resources for opaque geometry (owned by chunk)
     unsigned int m_VAO = 0;
     unsigned int m_VBO = 0;
     unsigned int m_IBO = 0;
     unsigned int m_IndexCount = 0;
     bool m_HasMesh = false;
+    
+    // GPU mesh resources for water (transparent geometry)
+    unsigned int m_WaterVAO = 0;
+    unsigned int m_WaterVBO = 0;
+    unsigned int m_WaterIBO = 0;
+    unsigned int m_WaterIndexCount = 0;
+    bool m_HasWaterMesh = false;
 };
 
 } // namespace Voxel

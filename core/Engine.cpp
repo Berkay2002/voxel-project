@@ -67,12 +67,21 @@ Engine::Engine() {
 Engine::~Engine() { LOG_INFO("Engine shutting down..."); }
 
 void Engine::SetupWorld() {
-  // Create lit shader with lighting support
+  // Create lit shader with lighting support (for opaque geometry)
   m_Shader = std::make_unique<Shader>("assets/shaders/lit.vert",
                                        "assets/shaders/lit.frag");
 
   if (!m_Shader->IsValid()) {
-    LOG_ERROR("Failed to create shader for world");
+    LOG_ERROR("Failed to create lit shader for world");
+    return;
+  }
+
+  // Create water shader (for transparent water)
+  m_WaterShader = std::make_unique<Shader>("assets/shaders/water.vert",
+                                           "assets/shaders/water.frag");
+
+  if (!m_WaterShader->IsValid()) {
+    LOG_ERROR("Failed to create water shader");
     return;
   }
 
@@ -84,7 +93,7 @@ void Engine::SetupWorld() {
     return;
   }
 
-  // Set shader uniforms
+  // Set lit shader uniforms
   m_Shader->Bind();
   m_Shader->SetInt("u_Texture", 0);
   // Sun direction: slightly angled from above-right
@@ -93,10 +102,19 @@ void Engine::SetupWorld() {
   m_Shader->SetFloat("u_AmbientStrength", 0.35f);
   m_Shader->Unbind();
 
+  // Set water shader uniforms
+  m_WaterShader->Bind();
+  m_WaterShader->SetInt("u_Texture", 0);
+  m_WaterShader->SetVec3("u_LightDir", glm::normalize(glm::vec3(0.5f, 1.0f, 0.3f)));
+  m_WaterShader->SetFloat("u_AmbientStrength", 0.35f);
+  m_WaterShader->SetFloat("u_WaterAlpha", 0.7f);  // Water transparency
+  m_WaterShader->SetFloat("u_Time", 0.0f);        // For optional animation
+  m_WaterShader->Unbind();
+
   // Create chunk manager
   m_ChunkManager = std::make_unique<Voxel::ChunkManager>();
 
-  LOG_INFO("World setup complete with ChunkManager and lighting");
+  LOG_INFO("World setup complete with ChunkManager, lighting, and water system");
 }
 
 void Engine::ProcessInput(float deltaTime) {
@@ -133,8 +151,10 @@ void Engine::ProcessInput(float deltaTime) {
   bool right = glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS;
   bool up = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
   bool down = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS;
+  bool sprint = glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS ||
+                glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS;
 
-  m_Camera->ProcessKeyboard(deltaTime, forward, backward, left, right, up, down);
+  m_Camera->ProcessKeyboard(deltaTime, forward, backward, left, right, up, down, sprint);
 
   // Mouse input (only when cursor is captured)
   if (m_CursorCaptured) {
@@ -193,15 +213,37 @@ void Engine::Render() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   if (m_Shader && m_Shader->IsValid() && m_Texture && m_Camera && m_ChunkManager) {
-    // Bind texture
-    m_Texture->Bind(0);
-
     // Calculate aspect ratio
     float aspectRatio = static_cast<float>(m_Window->GetWidth()) / 
                         static_cast<float>(m_Window->GetHeight());
 
-    // Render all chunks
+    // Bind texture
+    m_Texture->Bind(0);
+
+    // === PASS 1: Render opaque geometry ===
     m_ChunkManager->RenderAll(*m_Shader, *m_Camera, aspectRatio);
+
+    // === PASS 2: Render transparent water ===
+    if (m_WaterShader && m_WaterShader->IsValid()) {
+      // Enable alpha blending for water
+      glEnable(GL_BLEND);
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      
+      // Disable depth writes for transparent objects (read only)
+      // This prevents water from blocking things behind it in the depth buffer
+      glDepthMask(GL_FALSE);
+      
+      // Disable backface culling for water so we can see it from underwater
+      glDisable(GL_CULL_FACE);
+      
+      // Render water
+      m_ChunkManager->RenderWater(*m_WaterShader, *m_Camera, aspectRatio);
+      
+      // Restore state
+      glEnable(GL_CULL_FACE);
+      glDepthMask(GL_TRUE);
+      glDisable(GL_BLEND);
+    }
 
     m_Texture->Unbind();
   }

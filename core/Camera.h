@@ -19,9 +19,9 @@ public:
   void UpdateFrustum(float aspectRatio);
   [[nodiscard]] const Frustum& GetFrustum() const { return m_Frustum; }
 
-  // Movement
+  // Movement (sprint = true for faster movement with CTRL held)
   void ProcessKeyboard(float deltaTime, bool forward, bool backward, 
-                       bool left, bool right, bool up, bool down);
+                       bool left, bool right, bool up, bool down, bool sprint = false);
   void ProcessMouseMovement(float xOffset, float yOffset, bool constrainPitch = true);
 
   // Getters

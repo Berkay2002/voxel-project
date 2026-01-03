@@ -62,10 +62,13 @@ void TerrainGenerator::Generate(Chunk& chunk) {
                     // Near surface: Dirt
                     type = BlockType::Dirt;
                 } else if (y == height) {
-                    // Surface: Grass
+                    // Surface: Grass (or Sand if below water, future enhancement)
                     type = BlockType::Grass;
+                } else if (y <= m_Config.seaLevel && y > height) {
+                    // Above terrain but at or below sea level: Water
+                    type = BlockType::Water;
                 }
-                // y > height: Air (already initialized)
+                // y > seaLevel && y > height: Air (already initialized)
                 
                 chunk.SetBlock(x, y, z, type);
             }

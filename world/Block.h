@@ -1,4 +1,4 @@
-#pragma once
+    #pragma once
 
 #include <glm/glm.hpp>
 #include <cstdint>
@@ -11,6 +11,7 @@ enum class BlockType : uint8_t {
     Dirt,
     Grass,
     Stone,
+    Water,
     COUNT  // Keep last for iteration
 };
 
@@ -25,13 +26,19 @@ enum class Face : uint8_t {
 };
 
 // Check if a block type is solid/opaque (blocks light and visibility)
+// Water is NOT opaque - light passes through
 inline bool IsOpaque(BlockType type) {
+    return type != BlockType::Air && type != BlockType::Water;
+}
+
+// Check if a block should be rendered (has geometry)
+inline bool IsSolid(BlockType type) {
     return type != BlockType::Air;
 }
 
-// Check if a block should be rendered
-inline bool IsSolid(BlockType type) {
-    return type != BlockType::Air;
+// Check if a block is transparent (rendered with alpha blending)
+inline bool IsTransparent(BlockType type) {
+    return type == BlockType::Water;
 }
 
 // Get the direction vector for a face
@@ -81,6 +88,8 @@ inline int GetTextureIndex(BlockType type, Face face) {
             return 1;  // dirt_block.png
         case BlockType::Stone:
             return 3;  // stone_block.png
+        case BlockType::Water:
+            return 4;  // water.png
         default:
             return 0;
     }

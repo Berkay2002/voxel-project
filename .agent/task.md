@@ -154,19 +154,59 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
   - [x] Blocks show directional shading (lighter tops, darker sides)
   - [x] AO creates subtle shadows in corners/edges
 
-## Phase 7: Water System (Backlog)
+## Phase 7: Water System (In Progress)
 
-- [ ] **Water BlockType**
-  - [ ] Add `Water` to `BlockType` enum
-  - [ ] Set `IsOpaque()` to false for water
-  - [ ] Generate water at fixed sea level (e.g., Y=40)
-- [ ] **Transparent Rendering**
-  - [ ] Create `assets/shaders/water.vert/frag`
-  - [ ] Enable alpha blending for water pass
-  - [ ] Render opaque chunks first, then water chunks
-- [ ] **Visual Polish** (Optional)
-  - [ ] Animated water UVs
-  - [ ] Blue tint vertex color
+### Block System
+
+- [x] Add `Water` to `BlockType` enum in `Block.h`
+- [x] Update `IsOpaque()` to return `false` for Water
+- [x] Update `IsSolid()` to return `true` for Water (has geometry, not collidable logic)
+- [x] Add `IsTransparent()` helper function
+- [x] Update `GetTextureIndex()` to return index 4 for Water
+
+### Terrain Generation
+
+- [x] Define `seaLevel` config field (default 40)
+- [x] Update `TerrainGenerator::Generate()` to fill Water from terrain height to sea level
+
+### Mesh Building
+
+- [x] Add `ChunkMeshResult` struct with opaque + water meshes
+- [x] Update `ChunkMeshBuilder::BuildMesh()` to return `ChunkMeshResult`
+- [x] Separate opaque and water face generation logic
+
+### Chunk System
+
+- [x] Extend `ChunkMeshData` with separate opaque/water vertex/index arrays
+- [x] Add water GPU resources (m_WaterVAO, m_WaterVBO, m_WaterIBO)
+- [x] Update `GenerateMeshData()` to produce both meshes
+- [x] Update `UploadMeshFromData()` to upload both meshes
+- [x] Add `RenderWater()` method
+- [x] Update `CleanupMesh()` for water resources
+
+### Shaders
+
+- [x] Create `assets/shaders/water.vert`
+- [x] Create `assets/shaders/water.frag` with blue tint and alpha
+
+### Chunk Manager
+
+- [x] Add `RenderWater()` method with frustum culling
+
+### Engine Integration
+
+- [x] Add `m_WaterShader` member
+- [x] Load water shader in `SetupWorld()`
+- [x] Update `Render()` with two-pass rendering (opaque → blended water)
+- [x] Enable/disable GL_BLEND and depth mask correctly
+
+### Assets & Validation
+
+- [ ] Create water.png texture (optional - using grass texture with blue tint)
+- [x] Verify build succeeds
+- [ ] Verify water renders at sea level (runtime test)
+- [ ] Verify transparency and blue tint (runtime test)
+- [ ] Verify no visual regression for opaque blocks (runtime test)
 
 ## Phase 8: World Features (Backlog)
 

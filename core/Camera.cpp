@@ -28,8 +28,10 @@ glm::mat4 Camera::GetViewProjectionMatrix(float aspectRatio) const {
 }
 
 void Camera::ProcessKeyboard(float deltaTime, bool forward, bool backward,
-                              bool left, bool right, bool up, bool down) {
-  float velocity = m_Speed * deltaTime;
+                              bool left, bool right, bool up, bool down, bool sprint) {
+  // Sprint multiplier (3x speed when holding CTRL)
+  float speedMultiplier = sprint ? 3.0f : 1.0f;
+  float velocity = m_Speed * speedMultiplier * deltaTime;
 
   if (forward)
     m_Position += m_Front * velocity;

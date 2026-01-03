@@ -8,10 +8,17 @@ namespace Voxel {
 /**
  * Mesh data generated on a worker thread.
  * Contains raw vertex/index data that will be uploaded to GPU on main thread.
+ * Separated into opaque (solid blocks) and water (transparent) meshes for proper rendering.
  */
 struct ChunkMeshData {
-    std::vector<float> vertices;
-    std::vector<unsigned int> indices;
+    // Opaque mesh (solid blocks: dirt, grass, stone, etc.)
+    std::vector<float> opaqueVertices;
+    std::vector<unsigned int> opaqueIndices;
+    
+    // Water mesh (transparent blocks, rendered with alpha blending)
+    std::vector<float> waterVertices;
+    std::vector<unsigned int> waterIndices;
+    
     int chunkX = 0;
     int chunkZ = 0;
     bool valid = true;  // Set to false if generation failed

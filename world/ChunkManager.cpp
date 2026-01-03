@@ -211,4 +211,42 @@ void ChunkManager::RenderAll(Core::Shader& shader, Core::Camera& camera, float a
     }
 }
 
+void ChunkManager::RenderWater(Core::Shader& waterShader, Core::Camera& camera, float aspectRatio) {
+    waterShader.Bind();
+    
+    // Frustum should already be updated from RenderAll, but update just in case
+    const Core::Frustum& frustum = camera.GetFrustum();
+    
+    glm::mat4 viewProj = camera.GetViewProjectionMatrix(aspectRatio);
+    
+    for (const auto& [coord, chunk] : m_Chunks) {
+        if (!chunk->HasWaterMesh()) {
+            continue;
+        }
+
+        // Calculate world bounds for this chunk
+        float worldX = static_cast<float>(coord.x * CHUNK_WIDTH);
+        float worldZ = static_cast<float>(coord.z * CHUNK_DEPTH);
+        
+        // Chunk AABB for frustum culling
+        glm::vec3 minBounds(worldX, 0.0f, worldZ);
+        glm::vec3 maxBounds(worldX + CHUNK_WIDTH, CHUNK_HEIGHT, worldZ + CHUNK_DEPTH);
+        
+        // Skip rendering if chunk is outside frustum
+        if (!frustum.IsAABBVisible(minBounds, maxBounds)) {
+            continue;
+        }
+        
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(worldX, 0.0f, worldZ));
+        glm::mat4 mvp = viewProj * model;
+        
+        waterShader.SetMat4("u_MVP", mvp);
+        waterShader.SetMat4("u_Model", model);
+        
+        chunk->RenderWater();
+    }
+    
+    waterShader.Unbind();
+}
+
 } // namespace Voxel

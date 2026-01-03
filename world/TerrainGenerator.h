@@ -11,6 +11,7 @@ struct TerrainConfig {
     float frequency = 0.02f;    // Lower = larger features
     int baseHeight = 64;        // Average terrain height
     int amplitude = 20;         // Height variation (+/-)
+    int seaLevel = 50;          // Water fills below this level (valleys get water)
 };
 
 class TerrainGenerator {

@@ -45,8 +45,11 @@ public:
     // Process completed mesh tasks (call from main thread each frame)
     void ProcessPendingMeshes();
 
-    // Render all loaded chunks
+    // Render all loaded chunks (opaque geometry pass)
     void RenderAll(Core::Shader& shader, Core::Camera& camera, float aspectRatio);
+    
+    // Render water for all loaded chunks (transparent pass - call AFTER RenderAll)
+    void RenderWater(Core::Shader& waterShader, Core::Camera& camera, float aspectRatio);
 
     // Get chunk at given chunk coordinates (nullptr if not loaded)
     Chunk* GetChunk(int chunkX, int chunkZ);
@@ -88,8 +91,8 @@ private:
     std::mutex m_PendingMeshMutex;
 
     // Load/unload configuration
-    int m_LoadRadius = 2;      // Chunks to load around player (5x5 grid with radius 2)
-    int m_UnloadRadius = 3;    // Chunks beyond this are unloaded (hysteresis)
+    int m_LoadRadius = 6;      // Chunks to load around player (13x13 grid with radius 6)
+    int m_UnloadRadius = 8;    // Chunks beyond this are unloaded (hysteresis)
 
     // Current center chunk (to detect when player moves to new chunk)
     ChunkCoord m_CenterChunk = {0, 0};

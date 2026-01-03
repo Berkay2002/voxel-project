@@ -71,11 +71,12 @@ _Refer to `.agent/architecture_reference.md` for the full architectural breakdow
 - **Phase 6**: ✅ Complete (2026-01-03)
   - Directional sun lighting with ambient light
   - Per-vertex ambient occlusion
-- **Phase 7**: 🔜 Next (Water System)
-  - Water BlockType at sea level
-  - Transparent rendering with alpha blending
-  - Animated water UVs (optional)
-- **Phase 8**: Backlog (World Features)
+- **Phase 7**: ✅ Complete (2026-01-03)
+  - Water BlockType with transparent rendering
+  - Separate opaque/water mesh generation
+  - Two-pass rendering with alpha blending
+  - Water shader with blue tint
+- **Phase 8**: 🔜 Next (World Features)
   - Cave generation with 3D Perlin noise
   - More block types (Sand, Gravel, Cobblestone)
   - Texture atlas for multiple block textures

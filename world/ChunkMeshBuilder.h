@@ -29,13 +29,20 @@ struct ChunkMesh {
     }
 };
 
+// Combined result with separate opaque and water meshes
+struct ChunkMeshResult {
+    ChunkMesh opaqueMesh;   // Solid blocks (rendered first, no blending)
+    ChunkMesh waterMesh;    // Transparent water blocks (rendered second, with alpha blending)
+};
+
 class ChunkMeshBuilder {
 public:
     ChunkMeshBuilder() = default;
     ~ChunkMeshBuilder() = default;
 
     // Build mesh from chunk data with face culling
-    ChunkMesh BuildMesh(const Chunk& chunk);
+    // Returns separate opaque and water meshes for proper render ordering
+    ChunkMeshResult BuildMesh(const Chunk& chunk);
 
 private:
     // Add a single face to the mesh (with AO calculation)
