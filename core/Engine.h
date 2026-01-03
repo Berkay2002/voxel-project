@@ -10,6 +10,7 @@ class VertexArray;
 class VertexBuffer;
 class IndexBuffer;
 class Texture;
+class Camera;
 
 class Engine {
 public:
@@ -25,9 +26,10 @@ public:
   void Run();
 
 private:
-  void Update();
+  void Update(float deltaTime);
   void Render();
-  void SetupQuad();
+  void SetupCube();
+  void ProcessInput(float deltaTime);
 
   std::unique_ptr<Window> m_Window;
   
@@ -37,6 +39,13 @@ private:
   std::unique_ptr<VertexBuffer> m_VBO;
   std::unique_ptr<IndexBuffer> m_IBO;
   std::unique_ptr<Texture> m_Texture;
+  std::unique_ptr<Camera> m_Camera;
+
+  // Input state
+  float m_LastX = 400.0f;
+  float m_LastY = 300.0f;
+  bool m_FirstMouse = true;
+  bool m_CursorCaptured = false;
 };
 
 } // namespace Core

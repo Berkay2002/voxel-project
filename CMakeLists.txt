@@ -71,6 +71,7 @@ add_executable(${PROJECT_NAME}
     core/IndexBuffer.cpp
     core/VertexArray.cpp
     core/Texture.cpp
+    core/Camera.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
