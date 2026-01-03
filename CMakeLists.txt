@@ -70,9 +70,13 @@ add_executable(${PROJECT_NAME}
     core/VertexBuffer.cpp
     core/IndexBuffer.cpp
     core/VertexArray.cpp
+    core/Texture.cpp
 )
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${CMAKE_SOURCE_DIR}
+    ${stb_SOURCE_DIR}
+)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     glfw
