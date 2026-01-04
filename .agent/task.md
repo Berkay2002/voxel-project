@@ -534,3 +534,13 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
 - [ ] Document OpenGL → Vulkan migration path
 - [ ] Prototype ray-traced shadows with VK_KHR_ray_tracing
 - [ ] Research AI denoising (OptiX AI Denoiser)
+
+## Phase 18: Documentation & Polish ✅
+
+- [x] **Project Identity**
+  - [x] Generate Project Logo
+  - [x] Create `logo.png` in root
+- [x] **Documentation**
+  - [x] Create `README.md`
+  - [x] Add build instructions, features, and tech stack
+  - [x] Include infographic and logo
