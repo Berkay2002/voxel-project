@@ -256,11 +256,28 @@ glm::vec3 SkyRenderer::GetSunDirection() const {
     // 0.0 = midnight (below horizon), 0.25 = dawn, 0.5 = noon (overhead), 0.75 = dusk
     float angle = (m_TimeOfDay - 0.25f) * 2.0f * static_cast<float>(M_PI);
     
-    return glm::normalize(glm::vec3(
+    glm::vec3 sunDir = glm::normalize(glm::vec3(
         std::cos(angle),   // X: east-west
         std::sin(angle),   // Y: up-down
-        0.3f               // Z: slight tilt
+        0.0f               // Z: no tilt (pure vertical orbit)
     ));
+    
+    // Smooth transition near horizon to avoid abrupt lighting changes
+    // When sun is near horizon (Y close to 0), blend towards a "null" light direction
+    // This creates a gradual dawn/dusk transition instead of a hard cutoff
+    const float horizonThreshold = 0.15f;  // Start fading when sun is this close to horizon
+    
+    if (sunDir.y < 0.0f) {
+        // Sun below horizon - no directional lighting
+        return glm::vec3(0.0f, -1.0f, 0.0f);
+    } else if (sunDir.y < horizonThreshold) {
+        // Sun near horizon - blend between null light and actual sun direction
+        float t = sunDir.y / horizonThreshold;  // 0 at horizon, 1 at threshold
+        glm::vec3 nullLight = glm::vec3(0.0f, -1.0f, 0.0f);
+        return glm::normalize(glm::mix(nullLight, sunDir, t));
+    }
+    
+    return sunDir;
 }
 
 float SkyRenderer::GetAmbientStrength() const {
