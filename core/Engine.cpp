@@ -3,9 +3,11 @@
 #include "core/Logger.h"
 #include "core/Shader.h"
 #include "core/TextureArray.h"
+#include "core/TextureRegistry.h"
 #include "core/Window.h"
 
 // Voxel system
+#include "world/BlockRegistry.h"
 #include "world/ChunkManager.h"
 #include "world/SpaghettiCaveCarver.h"
 
@@ -86,21 +88,45 @@ void Engine::SetupWorld() {
     return;
   }
 
-  // Load block textures into texture array
-  // Layer order matches GetTextureIndex() in Block.h:
-  //   0 = grass_block.png (grass top)
-  //   1 = dirt_block.png
-  //   2 = grass_block_side.png
-  //   3 = stone_block.png
-  m_TextureArray = std::make_unique<TextureArray>(std::vector<std::string>{
-      "assets/textures/blocks/grass_block.png",      // Layer 0: Grass top
-      "assets/textures/blocks/dirt_block.png",       // Layer 1: Dirt
-      "assets/textures/blocks/grass_block_side.png", // Layer 2: Grass side
-      "assets/textures/blocks/stone_block.png"       // Layer 3: Stone
-  });
-
-  if (!m_TextureArray->IsValid()) {
-    LOG_ERROR("Failed to load texture array for world");
+  // =========================================================================
+  // PHASE 11: Data-driven texture and block loading via registries
+  // =========================================================================
+  
+  // Define textures to load (order determines layer indices)
+  // This list should include all textures referenced in blocks.json
+  std::vector<std::string> textureList = {
+      "grass_block_top",    // Layer 0
+      "dirt",               // Layer 1
+      "grass_block_side",   // Layer 2
+      "stone",              // Layer 3
+      "blue_ice",           // Layer 4 (water placeholder - water_still is animated spritesheet)
+      "bedrock",            // Layer 5
+      "sand",               // Layer 6
+      "gravel",             // Layer 7
+      "cobblestone",        // Layer 8
+      "oak_log_top",        // Layer 9
+      "oak_log",            // Layer 10
+      "oak_planks",         // Layer 11
+      "oak_leaves",         // Layer 12
+      "coal_ore",           // Layer 13
+      "iron_ore",           // Layer 14
+      "gold_ore",           // Layer 15
+      "diamond_ore",        // Layer 16
+      "copper_ore",         // Layer 17
+      "emerald_ore"         // Layer 18
+  };
+  
+  // Load textures via TextureRegistry
+  TextureRegistry& texRegistry = TextureRegistry::Instance();
+  if (!texRegistry.LoadTextures(textureList, "assets/textures/blocks/")) {
+    LOG_ERROR("Failed to load textures via TextureRegistry");
+    return;
+  }
+  
+  // Load block definitions via BlockRegistry
+  Voxel::BlockRegistry& blockRegistry = Voxel::BlockRegistry::Instance();
+  if (!blockRegistry.LoadFromFile("assets/config/blocks.json", texRegistry)) {
+    LOG_ERROR("Failed to load block definitions via BlockRegistry");
     return;
   }
 
@@ -125,8 +151,11 @@ void Engine::SetupWorld() {
   // Create chunk manager
   m_ChunkManager = std::make_unique<Voxel::ChunkManager>();
 
-  LOG_INFO("World setup complete with ChunkManager, texture array, and water system");
+  LOG_INFO("World setup complete with " + 
+           std::to_string(blockRegistry.GetBlockCount()) + " blocks and " +
+           std::to_string(texRegistry.GetTextureCount()) + " textures");
 }
+
 
 void Engine::ProcessInput(float deltaTime) {
   GLFWwindow *window = m_Window->GetHandle();
@@ -223,13 +252,14 @@ void Engine::Render() {
   glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  if (m_Shader && m_Shader->IsValid() && m_TextureArray && m_Camera && m_ChunkManager) {
+  TextureRegistry& texRegistry = TextureRegistry::Instance();
+  if (m_Shader && m_Shader->IsValid() && texRegistry.IsLoaded() && m_Camera && m_ChunkManager) {
     // Calculate aspect ratio
     float aspectRatio = static_cast<float>(m_Window->GetWidth()) / 
                         static_cast<float>(m_Window->GetHeight());
 
-    // Bind texture array
-    m_TextureArray->Bind(0);
+    // Bind texture array from registry
+    texRegistry.GetTextureArray()->Bind(0);
 
     // === PASS 1: Render opaque geometry ===
     m_ChunkManager->RenderAll(*m_Shader, *m_Camera, aspectRatio);
@@ -256,7 +286,7 @@ void Engine::Render() {
       glDisable(GL_BLEND);
     }
 
-    m_TextureArray->Unbind();
+    texRegistry.GetTextureArray()->Unbind();
   }
 }
 

@@ -110,6 +110,11 @@ void Chunk::BuildMesh() {
                               (void*)offsetof(ChunkVertex, texIndex));
         glEnableVertexAttribArray(4);
 
+        // TintColor attribute (location 5)
+        glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), 
+                              (void*)offsetof(ChunkVertex, tintColor));
+        glEnableVertexAttribArray(5);
+
         // Upload index data
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_IBO);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER,
@@ -174,6 +179,11 @@ void Chunk::BuildMesh() {
         glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), 
                               (void*)offsetof(ChunkVertex, texIndex));
         glEnableVertexAttribArray(4);
+
+        // TintColor attribute (location 5)
+        glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), 
+                              (void*)offsetof(ChunkVertex, tintColor));
+        glEnableVertexAttribArray(5);
 
         // Upload index data
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_WaterIBO);
@@ -242,9 +252,9 @@ ChunkMeshData Chunk::GenerateMeshData() const {
     data.valid = true;
     
     // Convert opaque mesh ChunkVertex array to flat float array for GPU upload
-    // Layout: position (3) + uv (2) + normal (3) + ao (1) + texIndex (1) = 10 floats per vertex
+    // Layout: position (3) + uv (2) + normal (3) + ao (1) + texIndex (1) + tintColor (3) = 13 floats per vertex
     if (!result.opaqueMesh.IsEmpty()) {
-        data.opaqueVertices.reserve(result.opaqueMesh.vertices.size() * 10);
+        data.opaqueVertices.reserve(result.opaqueMesh.vertices.size() * 13);
         for (const auto& vertex : result.opaqueMesh.vertices) {
             data.opaqueVertices.push_back(vertex.position.x);
             data.opaqueVertices.push_back(vertex.position.y);
@@ -256,13 +266,16 @@ ChunkMeshData Chunk::GenerateMeshData() const {
             data.opaqueVertices.push_back(vertex.normal.z);
             data.opaqueVertices.push_back(vertex.ao);
             data.opaqueVertices.push_back(vertex.texIndex);
+            data.opaqueVertices.push_back(vertex.tintColor.r);
+            data.opaqueVertices.push_back(vertex.tintColor.g);
+            data.opaqueVertices.push_back(vertex.tintColor.b);
         }
         data.opaqueIndices = std::move(result.opaqueMesh.indices);
     }
     
     // Convert water mesh to flat float array
     if (!result.waterMesh.IsEmpty()) {
-        data.waterVertices.reserve(result.waterMesh.vertices.size() * 10);
+        data.waterVertices.reserve(result.waterMesh.vertices.size() * 13);
         for (const auto& vertex : result.waterMesh.vertices) {
             data.waterVertices.push_back(vertex.position.x);
             data.waterVertices.push_back(vertex.position.y);
@@ -274,6 +287,9 @@ ChunkMeshData Chunk::GenerateMeshData() const {
             data.waterVertices.push_back(vertex.normal.z);
             data.waterVertices.push_back(vertex.ao);
             data.waterVertices.push_back(vertex.texIndex);
+            data.waterVertices.push_back(vertex.tintColor.r);
+            data.waterVertices.push_back(vertex.tintColor.g);
+            data.waterVertices.push_back(vertex.tintColor.b);
         }
         data.waterIndices = std::move(result.waterMesh.indices);
     }
@@ -289,8 +305,8 @@ void Chunk::UploadMeshFromData(const ChunkMeshData& data) {
         return;
     }
     
-    // Vertex layout: position (3) + uv (2) + normal (3) + ao (1) + texIndex (1) = 10 floats = 40 bytes stride
-    constexpr GLsizei stride = 10 * sizeof(float);
+    // Vertex layout: position (3) + uv (2) + normal (3) + ao (1) + texIndex (1) + tintColor (3) = 13 floats = 52 bytes stride
+    constexpr GLsizei stride = 13 * sizeof(float);
     
     // Upload opaque mesh
     if (data.opaqueVertices.empty()) {
@@ -339,6 +355,10 @@ void Chunk::UploadMeshFromData(const ChunkMeshData& data) {
         // TexIndex attribute (location 4)
         glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, stride, (void*)(9 * sizeof(float)));
         glEnableVertexAttribArray(4);
+        
+        // TintColor attribute (location 5)
+        glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, stride, (void*)(10 * sizeof(float)));
+        glEnableVertexAttribArray(5);
         
         // Upload index data
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_IBO);
@@ -400,6 +420,10 @@ void Chunk::UploadMeshFromData(const ChunkMeshData& data) {
         // TexIndex attribute (location 4)
         glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, stride, (void*)(9 * sizeof(float)));
         glEnableVertexAttribArray(4);
+        
+        // TintColor attribute (location 5)
+        glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, stride, (void*)(10 * sizeof(float)));
+        glEnableVertexAttribArray(5);
         
         // Upload index data
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_WaterIBO);

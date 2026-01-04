@@ -75,6 +75,15 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(thread_pool)
 
+# nlohmann/json (JSON parsing for data-driven configuration)
+FetchContent_Declare(
+    json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG        v3.11.3
+)
+FetchContent_MakeAvailable(json)
+
+
 # ============================================================================
 # Executable
 # ============================================================================
@@ -95,6 +104,8 @@ add_executable(${PROJECT_NAME}
     world/TerrainGenerator.cpp
     world/ChunkManager.cpp
     world/SpaghettiCaveCarver.cpp
+    world/BlockRegistry.cpp
+    core/TextureRegistry.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
@@ -108,6 +119,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     glfw
     glm::glm
     glad_gl_core_46
+    nlohmann_json::nlohmann_json
 )
 
 # ============================================================================

@@ -11,6 +11,12 @@ The `.agent` directory serves as the persistent "brain" and memory for AI agents
 
 **Rule for Agents**: Always consult `.agent/task.md` and `.agent/architecture_reference.md` before starting new tasks.
 
+**Rule for Implementation**: During and after implementation phases:
+
+1. Update `.agent/task.md` with progress (`[ ]` → `[/]` → `[x]`)
+2. Update `GEMINI.md` Project Status when phases complete
+3. Keep implementation plans in `.agent/plans/` for reference
+
 ## Project Overview
 
 **Voxel Project** is a custom C++ game engine tailored for voxel-based rendering and gameplay. The goal is to build a performant, modular engine from scratch using modern C++.
@@ -103,3 +109,9 @@ _Refer to `.agent/architecture_reference.md` for the full architectural breakdow
   - Per-vertex texture index (`texIndex`) in `ChunkVertex`
   - Shaders sample from `sampler2DArray` using layer index
   - Block textures: grass_top, dirt, grass_side, stone
+- **Phase 11**: 🔄 In Progress (2026-01-04)
+  - Scalable Block & Texture Registry System
+  - Data-driven `blocks.json` configuration
+  - `BlockRegistry` and `TextureRegistry` singletons
+  - Support for 1000+ official Minecraft textures
+  - New blocks: bedrock, sand, gravel, cobblestone, ores, wood

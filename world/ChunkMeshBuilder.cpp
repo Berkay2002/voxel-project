@@ -102,12 +102,15 @@ void ChunkMeshBuilder::AddFace(ChunkMesh& mesh,
     // Get texture index based on block type and face
     float texIndex = static_cast<float>(GetTextureIndex(blockType, face));
 
+    // Get tint color for this face (biome-based for grass/foliage)
+    glm::vec3 tintColor = GetTintColor(ToBlockID(blockType), face);
+
     // Current vertex index before adding new vertices
     unsigned int baseIndex = static_cast<unsigned int>(mesh.vertices.size());
 
     // Add 4 vertices for the face
     for (int i = 0; i < 4; ++i) {
-        mesh.vertices.push_back({vertices[i], uvs[i], normal, ao[i], texIndex});
+        mesh.vertices.push_back({vertices[i], uvs[i], normal, ao[i], texIndex, tintColor});
     }
 
     // Add 2 triangles (6 indices) for the face

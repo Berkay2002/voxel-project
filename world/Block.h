@@ -1,120 +1,102 @@
-    #pragma once
+#pragma once
 
-#include <glm/glm.hpp>
-#include <cstdint>
+/**
+ * Block.h - Backward Compatibility Layer
+ * 
+ * This file provides backward compatibility with the old BlockType enum
+ * while the codebase transitions to the new BlockRegistry system.
+ * 
+ * New code should use:
+ *   - BlockRegistry::Instance().GetBlockID("grass_block")
+ *   - BlockRegistry::Instance().GetTextureIndex(blockId, face)
+ * 
+ * Legacy code using BlockType enum will continue to work.
+ */
+
+#include "BlockRegistry.h"
 
 namespace Voxel {
 
-// Block types available in the world
-enum class BlockType : uint8_t {
+// Legacy BlockType enum for backward compatibility
+// Maps directly to BlockID values from blocks.json load order
+enum class BlockType : uint16_t {
     Air = 0,
-    Dirt,
-    Grass,
-    Stone,
-    Water,
-    COUNT  // Keep last for iteration
+    Grass = 1,      // "grass_block" in JSON
+    Dirt = 2,       // "dirt" in JSON
+    Stone = 3,      // "stone" in JSON
+    Water = 4,      // "water" in JSON
+    Bedrock = 5,    // "bedrock" in JSON
+    Sand = 6,       // "sand" in JSON
+    Gravel = 7,     // "gravel" in JSON
+    Cobblestone = 8,// "cobblestone" in JSON
+    OakLog = 9,     // "oak_log" in JSON
+    OakPlanks = 10, // "oak_planks" in JSON
+    OakLeaves = 11, // "oak_leaves" in JSON
+    CoalOre = 12,   // "coal_ore" in JSON
+    IronOre = 13,   // "iron_ore" in JSON
+    GoldOre = 14,   // "gold_ore" in JSON
+    DiamondOre = 15,// "diamond_ore" in JSON
+    CopperOre = 16, // "copper_ore" in JSON
+    EmeraldOre = 17,// "emerald_ore" in JSON
+    COUNT           // Keep last for iteration
 };
 
-// Face directions for mesh generation
-enum class Face : uint8_t {
-    Top = 0,     // +Y
-    Bottom,      // -Y
-    North,       // +Z
-    South,       // -Z
-    East,        // +X
-    West         // -X
-};
+// Convert BlockType to BlockID
+inline BlockID ToBlockID(BlockType type) {
+    return static_cast<BlockID>(type);
+}
 
-// Check if a block type is solid/opaque (blocks light and visibility)
-// Water is NOT opaque - light passes through
+// Convert BlockID to BlockType (for legacy code)
+inline BlockType ToBlockType(BlockID id) {
+    if (id >= static_cast<BlockID>(BlockType::COUNT)) {
+        return BlockType::Air;
+    }
+    return static_cast<BlockType>(id);
+}
+
+// Legacy helper functions that delegate to BlockRegistry
+// These allow existing code to continue working without changes
+
 inline bool IsOpaque(BlockType type) {
-    return type != BlockType::Air && type != BlockType::Water;
+    return BlockRegistry::Instance().IsOpaque(ToBlockID(type));
 }
 
-// Check if a block should be rendered (has geometry)
 inline bool IsSolid(BlockType type) {
-    return type != BlockType::Air;
+    return BlockRegistry::Instance().IsSolid(ToBlockID(type));
 }
 
-// Check if a block is transparent (rendered with alpha blending)
 inline bool IsTransparent(BlockType type) {
-    return type == BlockType::Water;
+    return BlockRegistry::Instance().IsTransparent(ToBlockID(type));
 }
 
-// Get the direction vector for a face
-inline glm::ivec3 GetFaceDirection(Face face) {
-    switch (face) {
-        case Face::Top:    return { 0,  1,  0};
-        case Face::Bottom: return { 0, -1,  0};
-        case Face::North:  return { 0,  0,  1};
-        case Face::South:  return { 0,  0, -1};
-        case Face::East:   return { 1,  0,  0};
-        case Face::West:   return {-1,  0,  0};
-        default:           return { 0,  0,  0};
-    }
-}
-
-// Get UV coordinates for a block face
-// Returns bottom-left UV coordinate, each texture is 1x1 in UV space
-// For now, simple mapping - can be expanded for texture atlas later
-inline glm::vec2 GetBlockUV(BlockType type, Face face) {
-    // Simple UV mapping - all faces use full texture
-    // In future, this will return atlas coordinates
-    switch (type) {
-        case BlockType::Grass:
-            // Grass has different textures per face
-            if (face == Face::Top) {
-                return {0.0f, 0.0f};  // Grass top texture
-            } else if (face == Face::Bottom) {
-                return {0.0f, 0.0f};  // Dirt texture for bottom
-            } else {
-                return {0.0f, 0.0f};  // Grass side texture
-            }
-        case BlockType::Dirt:
-        case BlockType::Stone:
-        default:
-            return {0.0f, 0.0f};  // All faces same texture
-    }
-}
-
-// Get texture index for a block face (for texture array/atlas)
 inline int GetTextureIndex(BlockType type, Face face) {
-    switch (type) {
-        case BlockType::Grass:
-            if (face == Face::Top) return 0;        // grass_block.png
-            if (face == Face::Bottom) return 1;     // dirt_block.png
-            return 2;                               // grass_block_side.png
-        case BlockType::Dirt:
-            return 1;  // dirt_block.png
-        case BlockType::Stone:
-            return 3;  // stone_block.png
-        case BlockType::Water:
-            return 4;  // water.png
-        default:
-            return 0;
-    }
+    return BlockRegistry::Instance().GetTextureIndex(ToBlockID(type), face);
 }
 
-// Get color for a block face (used for per-vertex coloring before texture atlas)
-inline glm::vec3 GetBlockColor(BlockType type, Face face) {
+// Legacy UV function (kept for compatibility, returns 0,0 as before)
+inline glm::vec2 GetBlockUV([[maybe_unused]] BlockType type, [[maybe_unused]] Face face) {
+    return {0.0f, 0.0f};
+}
+
+// Legacy color function (kept for debug/fallback, not used with textures)
+inline glm::vec3 GetBlockColor(BlockType type, [[maybe_unused]] Face face) {
     switch (type) {
         case BlockType::Grass:
-            if (face == Face::Top) {
-                return glm::vec3(0.45f, 0.75f, 0.35f);  // Green grass top
-            } else if (face == Face::Bottom) {
-                return glm::vec3(0.55f, 0.35f, 0.20f);  // Dirt bottom
-            } else {
-                // Grass sides: gradient from grass to dirt
-                return glm::vec3(0.50f, 0.55f, 0.30f);  // Brownish-green
-            }
+            return glm::vec3(0.45f, 0.75f, 0.35f);
         case BlockType::Dirt:
-            return glm::vec3(0.55f, 0.35f, 0.20f);      // Brown dirt
+            return glm::vec3(0.55f, 0.35f, 0.20f);
         case BlockType::Stone:
-            return glm::vec3(0.55f, 0.55f, 0.55f);      // Gray stone
+            return glm::vec3(0.55f, 0.55f, 0.55f);
         case BlockType::Water:
-            return glm::vec3(0.2f, 0.4f, 0.8f);         // Blue-ish water
+            return glm::vec3(0.2f, 0.4f, 0.8f);
+        case BlockType::Sand:
+            return glm::vec3(0.85f, 0.80f, 0.55f);
+        case BlockType::Gravel:
+            return glm::vec3(0.5f, 0.5f, 0.5f);
+        case BlockType::Cobblestone:
+            return glm::vec3(0.45f, 0.45f, 0.45f);
         default:
-            return glm::vec3(1.0f, 0.0f, 1.0f);         // Magenta for missing
+            return glm::vec3(1.0f, 0.0f, 1.0f); // Magenta for missing
     }
 }
 

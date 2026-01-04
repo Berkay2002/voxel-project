@@ -5,11 +5,13 @@ layout (location = 1) in vec2 aTexCoord;
 layout (location = 2) in vec3 aNormal;
 layout (location = 3) in float aAO;
 layout (location = 4) in float aTexIndex;
+layout (location = 5) in vec3 aTintColor;  // Biome tint color for grass/foliage
 
 out vec2 TexCoord;
 out vec3 Normal;
 out float AO;
 out float TexIndex;
+out vec3 TintColor;
 
 uniform mat4 u_MVP;
 uniform mat4 u_Model;
@@ -21,4 +23,5 @@ void main() {
     Normal = mat3(u_Model) * aNormal;
     AO = aAO;
     TexIndex = aTexIndex;
+    TintColor = aTintColor;
 }

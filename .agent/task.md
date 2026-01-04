@@ -317,3 +317,43 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
 - [x] **Validation**
   - [x] Build succeeds
   - [ ] Block textures visually distinct (runtime)
+
+## Phase 11: Scalable Block & Texture Registry System (In Progress)
+
+### Planning
+
+- [/] Review current architecture (TextureArray, Block.h, Engine.cpp)
+- [/] Design BlockRegistry and TextureRegistry classes
+- [/] Create implementation plan
+- [ ] Get user approval on plan
+
+### Core Infrastructure
+
+- [ ] Add nlohmann/json to CMakeLists.txt via FetchContent
+- [ ] Create `core/TextureRegistry.h/.cpp`
+- [ ] Create `world/BlockRegistry.h/.cpp`
+- [ ] Create `assets/config/blocks.json` with block definitions
+
+### Refactoring
+
+- [ ] Refactor `Block.h` - Replace enum with BlockID typedef
+- [ ] Refactor `Chunk.h` - Update block storage to uint16_t
+- [ ] Refactor `ChunkMeshBuilder.cpp` - Use BlockRegistry for texture lookups
+- [ ] Refactor `Engine.cpp` - Initialize registries in SetupWorld()
+- [ ] Refactor `TerrainGenerator.cpp` - Use BlockID from BlockRegistry
+
+### New Blocks
+
+- [ ] Add bedrock (Y=0 layer)
+- [ ] Add sand (beaches)
+- [ ] Add gravel (rivers, caves)
+- [ ] Add cobblestone (cave walls)
+- [ ] Add oak_log, oak_planks, oak_leaves (tree structure)
+- [ ] Add ores: coal, iron, gold, diamond
+
+### Validation
+
+- [ ] Build succeeds
+- [ ] Existing terrain renders correctly
+- [ ] New blocks appear properly textured
+- [ ] No visual regression from Phase 10B

@@ -55,6 +55,9 @@ private:
 
     // Carve caves into the chunk using registered carvers
     void CarveCaves(Chunk& chunk, const std::vector<int>& heightMap);
+    
+    // Generate ores in underground stone
+    void GenerateOres(Chunk& chunk, const std::vector<int>& heightMap);
 
     TerrainConfig m_Config;
     std::vector<std::unique_ptr<ICaveCarver>> m_CaveCarvers;

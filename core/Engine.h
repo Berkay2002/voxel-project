@@ -42,7 +42,7 @@ private:
   // Rendering resources
   std::unique_ptr<Shader> m_Shader;           // Opaque geometry shader (lit)
   std::unique_ptr<Shader> m_WaterShader;      // Water shader (transparent)
-  std::unique_ptr<TextureArray> m_TextureArray;  // Block texture array
+  // Note: Textures are managed by TextureRegistry singleton
   std::unique_ptr<Camera> m_Camera;
 
   // World system

@@ -8,6 +8,7 @@ namespace Voxel {
 static FastNoiseLite s_TerrainNoise;  // Height map
 static FastNoiseLite s_BiomeNoise;    // Biome selection
 static FastNoiseLite s_RiverNoise;    // River paths
+static FastNoiseLite s_OreNoise;      // Ore distribution
 
 TerrainGenerator::TerrainGenerator() {
     SetConfig(TerrainConfig{});
@@ -35,6 +36,11 @@ void TerrainGenerator::SetConfig(const TerrainConfig& config) {
     s_RiverNoise.SetSeed(m_Config.seed + 2000);
     s_RiverNoise.SetFrequency(Config::RIVER_FREQUENCY);
     s_RiverNoise.SetCellularReturnType(FastNoiseLite::CellularReturnType_Distance2Div);
+    
+    // Configure ore noise (3D noise for blob-like distribution)
+    s_OreNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    s_OreNoise.SetSeed(m_Config.seed + 3000);
+    s_OreNoise.SetFrequency(0.1f);  // Controls ore blob size
     
     // Reconfigure all cave carvers with new seed
     for (auto& carver : m_CaveCarvers) {
@@ -173,6 +179,9 @@ void TerrainGenerator::Generate(Chunk& chunk) {
         CarveCaves(chunk, heightMap);
     }
     
+    // Pass 3: Generate ores in stone
+    GenerateOres(chunk, heightMap);
+    
     // Mark chunk as needing mesh rebuild
     chunk.SetDirty(true);
 }
@@ -213,5 +222,73 @@ void TerrainGenerator::ClearCaveCarvers() {
     m_CaveCarvers.clear();
 }
 
+void TerrainGenerator::GenerateOres(Chunk& chunk, const std::vector<int>& heightMap) {
+    int chunkOffsetX = chunk.GetChunkX() * CHUNK_WIDTH;
+    int chunkOffsetZ = chunk.GetChunkZ() * CHUNK_DEPTH;
+    
+    // Ore generation parameters from WorldConfig.h
+    struct OreConfig {
+        BlockType type;
+        int maxY;
+        float threshold;
+        float veinFreq;
+    };
+    
+    // Use centralized config values
+    std::vector<OreConfig> ores = {
+        {BlockType::CoalOre,     Config::COAL_MAX_Y,     Config::COAL_THRESHOLD,     Config::COAL_VEIN_FREQ},
+        {BlockType::IronOre,     Config::IRON_MAX_Y,     Config::IRON_THRESHOLD,     Config::IRON_VEIN_FREQ},
+        {BlockType::CopperOre,   Config::COPPER_MAX_Y,   Config::COPPER_THRESHOLD,   Config::COPPER_VEIN_FREQ},
+        {BlockType::GoldOre,     Config::GOLD_MAX_Y,     Config::GOLD_THRESHOLD,     Config::GOLD_VEIN_FREQ},
+        {BlockType::EmeraldOre,  Config::EMERALD_MAX_Y,  Config::EMERALD_THRESHOLD,  Config::EMERALD_VEIN_FREQ},
+        {BlockType::DiamondOre,  Config::DIAMOND_MAX_Y,  Config::DIAMOND_THRESHOLD,  Config::DIAMOND_VEIN_FREQ},
+    };
+    
+    for (int x = 0; x < CHUNK_WIDTH; ++x) {
+        for (int z = 0; z < CHUNK_DEPTH; ++z) {
+            int worldX = chunkOffsetX + x;
+            int worldZ = chunkOffsetZ + z;
+            int terrainHeight = heightMap[x + z * CHUNK_WIDTH];
+            
+            // Only generate ores in underground stone (not near surface)
+            for (int y = 1; y < terrainHeight - 5; ++y) {
+                // Only replace stone blocks
+                if (chunk.GetBlock(x, y, z) != BlockType::Stone) {
+                    continue;
+                }
+                
+                // Check each ore type
+                for (const auto& ore : ores) {
+                    if (y > ore.maxY) continue;  // Skip if above max height
+                    
+                    // Sample noise with ore-specific frequency for vein size
+                    float veinNoise = s_OreNoise.GetNoise(
+                        static_cast<float>(worldX) * ore.veinFreq / 0.1f,
+                        static_cast<float>(y) * ore.veinFreq / 0.1f,
+                        static_cast<float>(worldZ) * ore.veinFreq / 0.1f
+                    );
+                    
+                    // Add ore-type-specific offset for variation
+                    float oreOffset = s_OreNoise.GetNoise(
+                        static_cast<float>(worldX + static_cast<int>(ore.type) * 1000),
+                        static_cast<float>(y),
+                        static_cast<float>(worldZ + static_cast<int>(ore.type) * 500)
+                    );
+                    
+                    // Combine noises and normalize
+                    float combined = (veinNoise + oreOffset * 0.5f) / 1.5f;
+                    float normalized = (combined + 1.0f) * 0.5f;
+                    
+                    if (normalized > ore.threshold) {
+                        chunk.SetBlock(x, y, z, ore.type);
+                        break;  // Only one ore type per block
+                    }
+                }
+            }
+        }
+    }
+}
+
 } // namespace Voxel
+
 

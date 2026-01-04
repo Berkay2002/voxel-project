@@ -4,6 +4,7 @@ in vec2 TexCoord;
 in vec3 Normal;
 in float AO;
 in float TexIndex;
+in vec3 TintColor;  // Tint color (for consistency)
 
 out vec4 FragColor;
 
@@ -13,9 +14,11 @@ uniform float u_AmbientStrength;        // 0.0 - 1.0 (recommend 0.3-0.4)
 uniform float u_WaterAlpha;             // Water transparency (recommend 0.6-0.8)
 
 void main() {
-    // Sample from texture array (water uses layer from TexIndex)
-    // For now, use a blue water color since we don't have a water texture
-    vec3 waterColor = vec3(0.2, 0.4, 0.8);
+    // Sample from texture array
+    vec4 texColor = texture(u_TextureArray, vec3(TexCoord, TexIndex));
+    
+    // Apply tint color (water tint from TintColor, or use texture directly)
+    vec3 waterColor = texColor.rgb * TintColor;
     
     // Diffuse lighting (Lambertian reflection)
     vec3 norm = normalize(Normal);
