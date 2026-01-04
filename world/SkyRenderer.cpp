@@ -201,10 +201,16 @@ void SkyRenderer::RenderWeather(const Core::Camera& camera, float aspectRatio) {
 // =============================================================================
 
 void SkyRenderer::SetTimeOfDay(float time) {
-    m_TimeOfDay = std::fmod(time, 1.0f);
-    if (m_TimeOfDay < 0.0f) {
-        m_TimeOfDay += 1.0f;
+    // Properly wrap time and update day count (for moon phases)
+    while (time >= 1.0f) {
+        time -= 1.0f;
+        m_DayCount++;
     }
+    while (time < 0.0f) {
+        time += 1.0f;
+        m_DayCount--;
+    }
+    m_TimeOfDay = time;
 }
 
 glm::vec3 SkyRenderer::GetSkyColor() const {

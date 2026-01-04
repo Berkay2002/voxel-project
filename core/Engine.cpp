@@ -271,6 +271,15 @@ void Engine::ProcessInput(float deltaTime) {
     }
   }
 
+  // Rewind time with H key (hold to go back quickly - towards night)
+  if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
+    if (m_SkyRenderer) {
+      // Rewind time by 5% per second while held
+      float newTime = m_SkyRenderer->GetTimeOfDay() - deltaTime * 0.05f;
+      m_SkyRenderer->SetTimeOfDay(newTime);
+    }
+  }
+
   // Keyboard input
   bool forward = glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS;
   bool backward = glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS;
