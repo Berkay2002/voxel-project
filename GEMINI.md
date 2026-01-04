@@ -109,9 +109,14 @@ _Refer to `.agent/architecture_reference.md` for the full architectural breakdow
   - Per-vertex texture index (`texIndex`) in `ChunkVertex`
   - Shaders sample from `sampler2DArray` using layer index
   - Block textures: grass_top, dirt, grass_side, stone
-- **Phase 11**: 🔄 In Progress (2026-01-04)
+- **Phase 11**: ✅ Complete (2026-01-04)
   - Scalable Block & Texture Registry System
   - Data-driven `blocks.json` configuration
   - `BlockRegistry` and `TextureRegistry` singletons
-  - Support for 1000+ official Minecraft textures
+  - 18 block types with per-face textures
   - New blocks: bedrock, sand, gravel, cobblestone, ores, wood
+- **Phase 12**: ✅ Complete (2026-01-04)
+  - DDA algorithm for voxel ray traversal
+  - Block breaking (left-click) and placing (right-click)
+  - Async mesh rebuilding after block modifications
+  - Cross-chunk boundary handling

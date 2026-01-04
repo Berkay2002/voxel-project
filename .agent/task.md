@@ -318,42 +318,69 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
   - [x] Build succeeds
   - [ ] Block textures visually distinct (runtime)
 
-## Phase 11: Scalable Block & Texture Registry System (In Progress)
+## Phase 11: Scalable Block & Texture Registry System ✅
 
 ### Planning
 
-- [/] Review current architecture (TextureArray, Block.h, Engine.cpp)
-- [/] Design BlockRegistry and TextureRegistry classes
-- [/] Create implementation plan
-- [ ] Get user approval on plan
+- [x] Review current architecture (TextureArray, Block.h, Engine.cpp)
+- [x] Design BlockRegistry and TextureRegistry classes
+- [x] Create implementation plan
+- [x] Implementation completed
 
 ### Core Infrastructure
 
-- [ ] Add nlohmann/json to CMakeLists.txt via FetchContent
-- [ ] Create `core/TextureRegistry.h/.cpp`
-- [ ] Create `world/BlockRegistry.h/.cpp`
-- [ ] Create `assets/config/blocks.json` with block definitions
+- [x] Add nlohmann/json to CMakeLists.txt via FetchContent
+- [x] Create `core/TextureRegistry.h/.cpp`
+- [x] Create `world/BlockRegistry.h/.cpp`
+- [x] Create `assets/config/blocks.json` with block definitions
 
 ### Refactoring
 
-- [ ] Refactor `Block.h` - Replace enum with BlockID typedef
-- [ ] Refactor `Chunk.h` - Update block storage to uint16_t
-- [ ] Refactor `ChunkMeshBuilder.cpp` - Use BlockRegistry for texture lookups
-- [ ] Refactor `Engine.cpp` - Initialize registries in SetupWorld()
-- [ ] Refactor `TerrainGenerator.cpp` - Use BlockID from BlockRegistry
+- [x] Refactor `Block.h` - Replace enum with BlockID typedef
+- [x] Refactor `Chunk.h` - Update block storage to uint16_t
+- [x] Refactor `ChunkMeshBuilder.cpp` - Use BlockRegistry for texture lookups
+- [x] Refactor `Engine.cpp` - Initialize registries in SetupWorld()
+- [x] Refactor `TerrainGenerator.cpp` - Use BlockID from BlockRegistry
 
 ### New Blocks
 
-- [ ] Add bedrock (Y=0 layer)
-- [ ] Add sand (beaches)
-- [ ] Add gravel (rivers, caves)
-- [ ] Add cobblestone (cave walls)
-- [ ] Add oak_log, oak_planks, oak_leaves (tree structure)
-- [ ] Add ores: coal, iron, gold, diamond
+- [x] Add bedrock (Y=0 layer)
+- [x] Add sand (beaches)
+- [x] Add gravel (rivers, caves)
+- [x] Add cobblestone (cave walls)
+- [x] Add oak_log, oak_planks, oak_leaves (tree structure)
+- [x] Add ores: coal, iron, gold, diamond, copper, emerald
 
 ### Validation
 
-- [ ] Build succeeds
-- [ ] Existing terrain renders correctly
-- [ ] New blocks appear properly textured
-- [ ] No visual regression from Phase 10B
+- [x] Build succeeds
+- [x] Existing terrain renders correctly
+- [x] New blocks appear properly textured
+- [x] No visual regression from Phase 10B
+
+## Phase 12: Raycasting & Block Interaction ✅
+
+### Core System
+
+- [x] Create `core/Ray.h` - Ray struct with origin/direction
+- [x] Create `world/VoxelRaycast.h/.cpp` - DDA algorithm for voxel traversal
+- [x] Implement `RaycastResult` struct (hit position, block type, face normal)
+
+### Integration
+
+- [x] Add raycasting to `ChunkManager` for world queries (`GetBlock()`, `SetBlock()`)
+- [x] Hook up mouse click events in `Engine.cpp`
+- [ ] Visual feedback for targeted block (highlight/outline) - Phase 12B
+
+### Block Interaction
+
+- [x] Left-click: Break block (set to Air)
+- [x] Right-click: Place block (next to hit face)
+- [x] Mesh rebuilding after block changes (async via `RebuildChunkMesh()`)
+
+### Validation
+
+- [x] Build succeeds
+- [ ] Raycast correctly identifies block under crosshair (runtime)
+- [ ] Block breaking works and mesh updates (runtime)
+- [ ] Block placing works at correct position (runtime)
