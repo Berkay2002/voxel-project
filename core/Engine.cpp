@@ -3,6 +3,7 @@
 #include "core/Camera.h"
 #include "core/Logger.h"
 #include "core/Shader.h"
+#include "core/ShadowMap.h"
 #include "core/TextureArray.h"
 #include "core/TextureRegistry.h"
 #include "core/Window.h"
@@ -17,7 +18,9 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <string>
+#include <cmath>
 
 namespace Core {
 
@@ -126,6 +129,27 @@ void Engine::SetupWorld() {
     return;
   }
 
+  // Create shadow shader (depth-only pass for shadow mapping)
+  m_ShadowShader = std::make_unique<Shader>("assets/shaders/shadow.vert",
+                                            "assets/shaders/shadow.frag");
+
+  if (!m_ShadowShader->IsValid()) {
+    LOG_ERROR("Failed to create shadow shader");
+    return;
+  }
+
+  // Create shadow map (depth-only FBO)
+  m_ShadowMap = std::make_unique<ShadowMap>();
+  if (!m_ShadowMap->Create(Voxel::Config::SHADOW_MAP_RESOLUTION, 
+                           Voxel::Config::SHADOW_MAP_RESOLUTION)) {
+    LOG_ERROR("Failed to create shadow map");
+    // Non-fatal: continue without shadows
+    m_ShadowMap.reset();
+  } else {
+    LOG_INFO("Shadow map created: " + std::to_string(Voxel::Config::SHADOW_MAP_RESOLUTION) + "x" + 
+             std::to_string(Voxel::Config::SHADOW_MAP_RESOLUTION));
+  }
+
   // Setup crosshair
   SetupCrosshair();
 
@@ -186,6 +210,8 @@ void Engine::SetupWorld() {
   m_Shader->SetVec3("u_FogColor", glm::vec3(0.5f, 0.7f, 1.0f));
   m_Shader->SetFloat("u_FogStart", Voxel::Config::FOG_START);
   m_Shader->SetFloat("u_FogEnd", Voxel::Config::FOG_END);
+  m_Shader->SetInt("u_ShadowMap", 1);  // Shadow map in slot 1
+  m_Shader->SetBool("u_ShadowsEnabled", false);  // Will be set per-frame
   m_Shader->Unbind();
 
   // Set water shader uniforms
@@ -351,6 +377,100 @@ void Engine::Update(float deltaTime) {
   }
 }
 
+void Engine::RenderShadowPass() {
+  if (!m_ShadowMap || !m_ShadowShader || !m_ChunkManager || !m_Camera) {
+    return;
+  }
+
+  // Get sun direction from SkyRenderer
+  glm::vec3 sunDir = glm::normalize(glm::vec3(0.5f, 1.0f, 0.3f));
+  if (m_SkyRenderer) {
+    sunDir = m_SkyRenderer->GetSunDirection();
+  }
+
+  // Skip shadow pass if sun is below horizon
+  if (sunDir.y < 0.1f) {
+    return;
+  }
+
+  // Calculate light-space matrix with shadow map stabilization
+  glm::vec3 cameraPos = m_Camera->GetPosition();
+  float shadowDistance = Voxel::Config::SHADOW_DISTANCE;
+  
+  // === SHADOW MAP STABILIZATION ===
+  // Snap the shadow frustum center to texel boundaries to prevent shadow swimming
+  // when the player moves. This keeps shadows stable in world space.
+  
+  // Step 1: Create a stable "light view" looking along sun direction
+  // We use a fixed up vector orthogonal to the light direction
+  glm::vec3 lightUp = glm::vec3(0.0f, 1.0f, 0.0f);
+  if (std::abs(sunDir.y) > 0.99f) {
+    // Sun is nearly vertical, use different up vector
+    lightUp = glm::vec3(0.0f, 0.0f, 1.0f);
+  }
+  glm::vec3 lightRight = glm::normalize(glm::cross(sunDir, lightUp));
+  lightUp = glm::normalize(glm::cross(lightRight, sunDir));
+  
+  // Create view matrix components manually to avoid lookAt instabilities
+  glm::mat4 lightView = glm::mat4(1.0f);
+  lightView[0] = glm::vec4(lightRight, 0.0f);
+  lightView[1] = glm::vec4(lightUp, 0.0f);
+  lightView[2] = glm::vec4(-sunDir, 0.0f);  // Negative because looking along -Z
+  lightView = glm::transpose(lightView);    // Rotation part
+  
+  // Step 2: Transform camera position to light space
+  glm::vec3 cameraPosLightSpace = glm::vec3(lightView * glm::vec4(cameraPos, 1.0f));
+  
+  // Step 3: Snap to texel grid to prevent shadow swimming
+  float texelSize = (shadowDistance * 2.0f) / static_cast<float>(m_ShadowMap->GetWidth());
+  cameraPosLightSpace.x = std::floor(cameraPosLightSpace.x / texelSize) * texelSize;
+  cameraPosLightSpace.y = std::floor(cameraPosLightSpace.y / texelSize) * texelSize;
+  
+  // Step 4: Transform snapped position back to world space
+  glm::mat4 invLightRot = glm::transpose(lightView);
+  glm::vec3 snappedCenter = glm::vec3(invLightRot * glm::vec4(cameraPosLightSpace, 1.0f));
+  
+  // Step 5: Calculate final light position and matrices
+  // Light position is in the direction of the sun FROM the scene center
+  // (sunDir points TO the sun, so we ADD it to get light position)
+  glm::vec3 lightPos = snappedCenter + sunDir * shadowDistance;
+  
+  // Orthographic projection for directional light (sun)
+  float orthoSize = shadowDistance;
+  glm::mat4 lightProjection = glm::ortho(
+      -orthoSize, orthoSize,    // left, right
+      -orthoSize, orthoSize,    // bottom, top
+      Voxel::Config::SHADOW_NEAR_PLANE,
+      Voxel::Config::SHADOW_FAR_PLANE
+  );
+  
+  // Final view matrix with snapped center
+  glm::mat4 finalLightView = glm::lookAt(
+      lightPos,
+      snappedCenter,
+      lightUp
+  );
+  
+  m_LightSpaceMatrix = lightProjection * finalLightView;
+
+  // === Render to shadow map ===
+  m_ShadowMap->Bind();
+  glViewport(0, 0, m_ShadowMap->GetWidth(), m_ShadowMap->GetHeight());
+  glClear(GL_DEPTH_BUFFER_BIT);
+  
+  // Cull front faces to reduce shadow acne on lit surfaces
+  // (Peter panning is less noticeable than acne)
+  glCullFace(GL_FRONT);
+  
+  // Render all chunks to shadow map
+  m_ChunkManager->RenderAllShadow(*m_ShadowShader, m_LightSpaceMatrix);
+  
+  // Restore default culling
+  glCullFace(GL_BACK);
+  
+  m_ShadowMap->Unbind();
+}
+
 void Engine::Render() {
   // Get dynamic sky color from SkyRenderer (or default sky blue)
   glm::vec3 skyColor = glm::vec3(0.5f, 0.7f, 1.0f);
@@ -367,16 +487,6 @@ void Engine::Render() {
     float aspectRatio = static_cast<float>(m_Window->GetWidth()) / 
                         static_cast<float>(m_Window->GetHeight());
 
-    // === PASS 0: Render sky (depth write OFF) ===
-    if (m_SkyRenderer) {
-      glDepthMask(GL_FALSE);  // Don't write to depth buffer
-      m_SkyRenderer->Render(*m_Camera, aspectRatio);
-      glDepthMask(GL_TRUE);   // Re-enable depth writing
-    }
-
-    // Bind texture array from registry
-    texRegistry.GetTextureArray()->Bind(0);
-
     // Update shader uniforms for dynamic lighting
     glm::vec3 cameraPos = m_Camera->GetPosition();
     glm::vec3 lightDir = glm::normalize(glm::vec3(0.5f, 1.0f, 0.3f));
@@ -387,12 +497,53 @@ void Engine::Render() {
       lightDir = m_SkyRenderer->GetSunDirection();
       ambientStrength = m_SkyRenderer->GetAmbientStrength();
     }
+
+    // Determine if shadows should be enabled (only during day when sun is up)
+    bool shadowsEnabled = m_ShadowMap && m_ShadowShader && lightDir.y > 0.02f;
+    
+    // Calculate shadow strength with smooth fade near horizon
+    // Extended fade range: 0 at y=0.02 to 1.0 at y=0.45 for very gradual transition
+    // This covers most of the dawn/dusk period for a cinematic effect
+    float shadowStrength = 0.0f;
+    if (shadowsEnabled) {
+      shadowStrength = glm::clamp((lightDir.y - 0.02f) / 0.43f, 0.0f, 1.0f);
+      // Apply smoothstep for even smoother easing (S-curve instead of linear)
+      shadowStrength = shadowStrength * shadowStrength * (3.0f - 2.0f * shadowStrength);
+    }
+
+    // === SHADOW PASS ===
+    if (shadowsEnabled) {
+      RenderShadowPass();
+    }
+
+    // Restore main viewport after shadow pass
+    glViewport(0, 0, m_Window->GetWidth(), m_Window->GetHeight());
+
+    // === PASS 0: Render sky (depth write OFF) ===
+    if (m_SkyRenderer) {
+      glDepthMask(GL_FALSE);  // Don't write to depth buffer
+      m_SkyRenderer->Render(*m_Camera, aspectRatio);
+      glDepthMask(GL_TRUE);   // Re-enable depth writing
+    }
+
+    // Bind texture array from registry
+    texRegistry.GetTextureArray()->Bind(0);
+    
+    // Bind shadow map for sampling (slot 1)
+    if (shadowsEnabled) {
+      m_ShadowMap->BindTexture(1);
+    }
     
     m_Shader->Bind();
     m_Shader->SetVec3("u_CameraPos", cameraPos);
     m_Shader->SetVec3("u_LightDir", lightDir);
     m_Shader->SetFloat("u_AmbientStrength", ambientStrength);
     m_Shader->SetVec3("u_FogColor", skyColor);  // Fog matches sky
+    m_Shader->SetBool("u_ShadowsEnabled", shadowsEnabled);
+    m_Shader->SetFloat("u_ShadowStrength", shadowStrength);  // Smooth fade
+    if (shadowsEnabled) {
+      m_Shader->SetMat4("u_LightSpaceMatrix", m_LightSpaceMatrix);
+    }
     m_Shader->Unbind();
 
     // === PASS 1: Render opaque geometry ===

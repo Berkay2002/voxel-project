@@ -12,10 +12,12 @@ out vec3 Normal;
 out float AO;
 out float TexIndex;
 out vec3 TintColor;
-out vec3 FragWorldPos;  // World-space position for fog calculation
+out vec3 FragWorldPos;        // World-space position for fog calculation
+out vec4 FragPosLightSpace;   // Light-space position for shadow mapping
 
 uniform mat4 u_MVP;
 uniform mat4 u_Model;
+uniform mat4 u_LightSpaceMatrix;  // For shadow mapping
 
 void main() {
     vec4 worldPos = u_Model * vec4(aPos, 1.0);
@@ -27,5 +29,5 @@ void main() {
     TexIndex = aTexIndex;
     TintColor = aTintColor;
     FragWorldPos = worldPos.xyz;
+    FragPosLightSpace = u_LightSpaceMatrix * worldPos;
 }
-

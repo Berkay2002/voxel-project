@@ -52,6 +52,10 @@ public:
     // Render water for all loaded chunks (transparent pass - call AFTER RenderAll)
     void RenderWater(Core::Shader& waterShader, Core::Camera& camera, float aspectRatio);
 
+    // Render all chunks for shadow pass (depth-only, no culling from main camera)
+    // Uses light-space matrix for frustum and MVP
+    void RenderAllShadow(Core::Shader& shadowShader, const glm::mat4& lightSpaceMatrix);
+
     // Get chunk at given chunk coordinates (nullptr if not loaded)
     Chunk* GetChunk(int chunkX, int chunkZ);
 

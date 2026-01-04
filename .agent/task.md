@@ -439,21 +439,21 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
 - [x] 3D voxel-like cloud blocks with face culling
 - [x] Two-tone lighting (bright tops, shaded sides)
 
-## Phase 15: Shadow Mapping (Backlog)
+## Phase 15: Shadow Mapping (In Progress)
 
 ### Part A: Basic Shadow Map
 
-- [ ] Create `core/ShadowMap.h/.cpp` (depth-only FBO)
-- [ ] Create `shadow.vert/frag` shaders (depth pass)
-- [ ] Calculate light-space matrix from sun direction
-- [ ] Render scene from sun's POV for depth
+- [x] Create `core/ShadowMap.h/.cpp` (depth-only FBO)
+- [x] Create `shadow.vert/frag` shaders (depth pass)
+- [x] Calculate light-space matrix from sun direction
+- [x] Render scene from sun's POV for depth
 
 ### Part B: Shader Integration
 
-- [ ] Update `lit.frag` with shadow sampling
-- [ ] Add `u_ShadowMap` and `u_LightSpaceMatrix` uniforms
-- [ ] Implement PCF (Percentage Closer Filtering) for soft shadows
-- [ ] Update `Engine.cpp` with shadow render pass
+- [x] Update `lit.frag` with shadow sampling
+- [x] Add `u_ShadowMap` and `u_LightSpaceMatrix` uniforms
+- [x] Implement PCF (Percentage Closer Filtering) for soft shadows
+- [x] Update `Engine.cpp` with shadow render pass
 
 ### Part C: Cascaded Shadow Maps (CSM)
 
@@ -464,7 +464,7 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
 
 ### Validation
 
-- [ ] Build succeeds
+- [x] Build succeeds
 - [ ] Shadows cast correctly at various sun angles
 - [ ] No shadow acne or peter-panning artifacts
 - [ ] Performance acceptable (>30 FPS)

@@ -129,6 +129,15 @@ constexpr bool ENABLE_RIVERS       = true;
 constexpr bool ENABLE_ORES         = true;
 
 // =============================================================================
+// SHADOW MAPPING
+// =============================================================================
+
+constexpr int   SHADOW_MAP_RESOLUTION = 4096;   // Shadow texture size (higher = sharper shadows)
+constexpr float SHADOW_DISTANCE       = 256.0f; // Maximum shadow distance from camera
+constexpr float SHADOW_NEAR_PLANE     = 1.0f;   // Light frustum near plane
+constexpr float SHADOW_FAR_PLANE      = 512.0f; // Light frustum far plane (2x shadow distance)
+
+// =============================================================================
 // SKY & CLOUDS
 // =============================================================================
 
@@ -147,8 +156,8 @@ constexpr float CLOUD_SCALE         = 4.0f;    // UV tiling
 // Fancy mode (3D volumetric voxels)
 constexpr float CLOUD_BLOCK_SIZE    = 12.0f;   // World units per cloud cell
 constexpr float CLOUD_BLOCK_HEIGHT  = 4.0f;    // Extrusion height (thin slab)
-constexpr int   CLOUD_GRID_RADIUS   = 24;      // Cells around camera (render distance)
-constexpr float CLOUD_THRESHOLD     = 0.55f;   // Occupancy threshold (higher = sparser clouds)
+constexpr int   CLOUD_GRID_RADIUS   = 16;      // Cells around camera (reduced for performance)
+constexpr float CLOUD_THRESHOLD     = 0.70f;   // Occupancy threshold (higher = sparser clouds)
 
 // Two-tone lighting for volumetric clouds (minimal contrast for natural look)
 constexpr float CLOUD_LIGHT_TOP     = 1.0f;    // Top face brightness

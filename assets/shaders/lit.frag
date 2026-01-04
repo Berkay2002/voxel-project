@@ -4,8 +4,9 @@ in vec2 TexCoord;
 in vec3 Normal;
 in float AO;
 in float TexIndex;
-in vec3 TintColor;  // Biome tint for grass/foliage (white = no tint)
-in vec3 FragWorldPos;  // World-space position for fog
+in vec3 TintColor;        // Biome tint for grass/foliage (white = no tint)
+in vec3 FragWorldPos;     // World-space position for fog
+in vec4 FragPosLightSpace;// Light-space position for shadow mapping
 
 out vec4 FragColor;
 
@@ -19,6 +20,49 @@ uniform vec3 u_FogColor;                // Fog color (should match sky)
 uniform float u_FogStart;               // Distance where fog starts
 uniform float u_FogEnd;                 // Distance where fog is fully opaque
 
+// Shadow mapping uniforms
+uniform sampler2DShadow u_ShadowMap;    // Shadow depth texture with hardware comparison
+uniform bool u_ShadowsEnabled;          // Toggle for shadows (disabled at night)
+uniform float u_ShadowStrength;         // Fade factor for smooth dawn/dusk transition (0-1)
+
+/**
+ * Calculate shadow factor using PCF (Percentage Closer Filtering)
+ * Returns 1.0 = fully lit, 0.0 = fully in shadow
+ */
+float CalculateShadow(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir) {
+    // Perspective divide (light uses ortho so w=1, but good practice)
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    
+    // Transform to [0,1] range (NDC is [-1,1])
+    projCoords = projCoords * 0.5 + 0.5;
+    
+    // Outside shadow map = not in shadow
+    if (projCoords.z > 1.0) {
+        return 1.0;
+    }
+    
+    // Dynamic bias based on surface angle to light
+    // Steeper angles need more bias to prevent shadow acne
+    float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.001);
+    
+    // PCF: Sample 3x3 kernel for soft shadow edges
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(u_ShadowMap, 0);
+    
+    for (int x = -1; x <= 1; ++x) {
+        for (int y = -1; y <= 1; ++y) {
+            vec2 offset = vec2(x, y) * texelSize;
+            // sampler2DShadow does depth comparison automatically
+            // Returns 1.0 if current depth (with bias) <= shadow map depth
+            float sampleDepth = projCoords.z - bias;
+            shadow += texture(u_ShadowMap, vec3(projCoords.xy + offset, sampleDepth));
+        }
+    }
+    shadow /= 9.0;  // Average of 9 samples
+    
+    return shadow;
+}
+
 void main() {
     // Sample from texture array using layer index
     vec4 texColor = texture(u_TextureArray, vec3(TexCoord, TexIndex));
@@ -31,8 +75,17 @@ void main() {
     vec3 norm = normalize(Normal);
     float diff = max(dot(norm, u_LightDir), 0.0);
     
-    // Combine ambient + diffuse, modulated by ambient occlusion
-    float lighting = (u_AmbientStrength + (1.0 - u_AmbientStrength) * diff) * AO;
+    // Shadow calculation (only when enabled - disabled at night)
+    float shadow = 1.0;
+    if (u_ShadowsEnabled) {
+        float rawShadow = CalculateShadow(FragPosLightSpace, norm, u_LightDir);
+        // Blend shadow based on strength (smooth fade near dawn/dusk)
+        shadow = mix(1.0, rawShadow, u_ShadowStrength);
+    }
+    
+    // Combine ambient + diffuse * shadow, modulated by ambient occlusion
+    // Shadows only affect diffuse lighting, not ambient
+    float lighting = (u_AmbientStrength + (1.0 - u_AmbientStrength) * diff * shadow) * AO;
     
     vec3 litColor = tintedColor * lighting;
     
@@ -43,4 +96,3 @@ void main() {
     
     FragColor = vec4(finalColor, texColor.a);
 }
-

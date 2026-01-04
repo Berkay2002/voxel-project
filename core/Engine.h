@@ -2,6 +2,7 @@
 
 #include "world/VoxelRaycast.h"
 #include <memory>
+#include <glm/glm.hpp>
 
 namespace Core {
 
@@ -11,6 +12,7 @@ class Texture;
 class TextureArray;
 class Camera;
 class BlockOutline;
+class ShadowMap;
 
 } // namespace Core
 
@@ -40,6 +42,7 @@ public:
 private:
   void Update(float deltaTime);
   void Render();
+  void RenderShadowPass();  // Shadow map depth pass
   void SetupWorld();
   void ProcessInput(float deltaTime);
   void UpdateTargetedBlock();
@@ -51,8 +54,13 @@ private:
   std::unique_ptr<Shader> m_WaterShader;      // Water shader (transparent)
   std::unique_ptr<Shader> m_UIShader;         // UI shader (crosshair, etc.)
   std::unique_ptr<Shader> m_OutlineShader;    // Block outline shader
+  std::unique_ptr<Shader> m_ShadowShader;     // Shadow depth pass shader
   // Note: Textures are managed by TextureRegistry singleton
   std::unique_ptr<Camera> m_Camera;
+
+  // Shadow mapping
+  std::unique_ptr<ShadowMap> m_ShadowMap;
+  glm::mat4 m_LightSpaceMatrix = glm::mat4(1.0f);
 
   // World system
   std::unique_ptr<Voxel::ChunkManager> m_ChunkManager;

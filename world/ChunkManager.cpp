@@ -250,6 +250,30 @@ void ChunkManager::RenderWater(Core::Shader& waterShader, Core::Camera& camera, 
     waterShader.Unbind();
 }
 
+void ChunkManager::RenderAllShadow(Core::Shader& shadowShader, const glm::mat4& lightSpaceMatrix) {
+    shadowShader.Bind();
+    shadowShader.SetMat4("u_LightSpaceMatrix", lightSpaceMatrix);
+    
+    for (const auto& [coord, chunk] : m_Chunks) {
+        if (!chunk->HasMesh()) {
+            continue;
+        }
+        
+        // Calculate world position for this chunk
+        float worldX = static_cast<float>(coord.x * CHUNK_WIDTH);
+        float worldZ = static_cast<float>(coord.z * CHUNK_DEPTH);
+        
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(worldX, 0.0f, worldZ));
+        
+        shadowShader.SetMat4("u_Model", model);
+        
+        // Render only opaque geometry for shadows (water doesn't cast shadows)
+        chunk->Render();
+    }
+    
+    shadowShader.Unbind();
+}
+
 const Chunk* ChunkManager::GetChunkConst(int chunkX, int chunkZ) const {
     ChunkCoord coord = {chunkX, chunkZ};
     auto it = m_Chunks.find(coord);
