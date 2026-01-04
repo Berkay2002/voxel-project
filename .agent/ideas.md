@@ -61,9 +61,9 @@
 
 - ~~Distance fog~~ ✅ Phase 13A
 - ~~Block highlight/outline for targeted block~~ ✅ Phase 13B
-- Day/night cycle with dynamic lighting
+- Sky rendering with clouds, sun, moon, weather → Phase 14 (planning)
+- Day/night cycle with dynamic lighting → Phase 14C
 - Shadows (shadow mapping)
-- Sky rendering with clouds
 
 ### World Generation
 
