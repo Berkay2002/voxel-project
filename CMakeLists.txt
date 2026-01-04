@@ -107,6 +107,7 @@ add_executable(${PROJECT_NAME}
     world/SpaghettiCaveCarver.cpp
     world/BlockRegistry.cpp
     world/VoxelRaycast.cpp
+    world/SkyRenderer.cpp
     core/TextureRegistry.cpp
 )
 

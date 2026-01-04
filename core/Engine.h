@@ -16,6 +16,7 @@ class BlockOutline;
 
 namespace Voxel {
 class ChunkManager;
+class SkyRenderer;
 }
 
 namespace Core {
@@ -55,6 +56,7 @@ private:
 
   // World system
   std::unique_ptr<Voxel::ChunkManager> m_ChunkManager;
+  std::unique_ptr<Voxel::SkyRenderer> m_SkyRenderer;
 
   // Block interaction (raycasting)
   Voxel::RaycastResult m_TargetedBlock;       // Currently targeted block

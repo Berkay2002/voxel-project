@@ -400,34 +400,34 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
 - [x] Create `outline.vert/frag` shaders
 - [x] Render highlight on targeted block
 
-## Phase 14: Sky System (Planning)
+## Phase 14: Sky System (In Progress)
 
 ### Part A: Cloud Layer
 
-- [ ] Create `world/SkyRenderer.h/.cpp`
-- [ ] Create `cloud.vert/frag` shaders
-- [ ] Render flat cloud plane at Y=192
-- [ ] Scrolling texture for cloud drift
-- [ ] Add sky config to `WorldConfig.h`
+- [x] Create `world/SkyRenderer.h/.cpp`
+- [x] Create `cloud.vert/frag` shaders
+- [x] Render flat cloud plane at Y=192
+- [x] Scrolling texture for cloud drift
+- [x] Add sky config to `WorldConfig.h`
 
 ### Part B: Sun & Moon
 
-- [ ] Create `celestial.vert/frag` shaders
-- [ ] Billboard sun sprite using `sun.png` (32×32)
-- [ ] Billboard moon with 8 phases from `moon_phases.png` (128×64)
-- [ ] Sun/moon orbit opposite each other
+- [x] Create `celestial.vert/frag` shaders
+- [x] Billboard sun sprite using `sun.png` (32×32)
+- [x] Billboard moon with 8 phases from `moon_phases.png` (128×64)
+- [x] Sun/moon orbit opposite each other
 
 ### Part C: Day/Night Cycle
 
-- [ ] Time-of-day system (0.0-1.0 cycle)
-- [ ] Dynamic sky color (blue → orange → dark blue)
-- [ ] Dynamic light direction matching sun position
-- [ ] Adjust ambient light for night
+- [x] Time-of-day system (0.0-1.0 cycle)
+- [x] Dynamic sky color (blue → orange → dark blue)
+- [x] Dynamic light direction matching sun position
+- [x] Adjust ambient light for night
 
 ### Part D: Weather System
 
-- [ ] Create `weather.vert/frag` shaders
-- [ ] Rain particles using `rain.png` (64×256)
-- [ ] Snow particles using `snow.png` (64×256)
-- [ ] Particle cylinder around player
-- [ ] Toggle with key press
+- [x] Create `weather.vert/frag` shaders
+- [x] Rain particles using `rain.png` (64×256)
+- [x] Snow particles using `snow.png` (64×256)
+- [x] Particle cylinder around player
+- [x] Toggle with K key

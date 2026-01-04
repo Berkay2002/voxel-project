@@ -43,9 +43,9 @@ constexpr float CAVE_Y_SQUASH      = 2.0f;    // > 1 = horizontally stretched (w
 // CHUNK LOADING
 // =============================================================================
 
-constexpr int CHUNK_LOAD_RADIUS    = 8;       // Chunks loaded around player
-constexpr int CHUNK_UNLOAD_RADIUS  = 10;      // Chunks unloaded beyond this
-constexpr int MAX_MESH_UPLOADS_PER_FRAME = 2; // Rate limit GPU uploads
+constexpr int CHUNK_LOAD_RADIUS    = 20;      // Chunks loaded around player
+constexpr int CHUNK_UNLOAD_RADIUS  = 22;      // Chunks unloaded beyond this
+constexpr int MAX_MESH_UPLOADS_PER_FRAME = 4; // Rate limit GPU uploads (increased for larger radius)
 
 // =============================================================================
 // BIOME GENERATION
@@ -116,8 +116,8 @@ constexpr float DIAMOND_VEIN_FREQ = 0.16f;
 // DISTANCE FOG
 // =============================================================================
 
-constexpr float FOG_START           = 80.0f;   // Start fading at this distance (blocks)
-constexpr float FOG_END             = 128.0f;  // Fully fogged at this distance (blocks)
+constexpr float FOG_START           = 250.0f;  // Start fading at this distance (blocks)
+constexpr float FOG_END             = 320.0f;  // Fully fogged at this distance (matches 20 chunk radius)
 // Fog color matches sky: RGB (0.5, 0.7, 1.0) - set in Engine.cpp
 
 // =============================================================================
@@ -127,6 +127,36 @@ constexpr float FOG_END             = 128.0f;  // Fully fogged at this distance 
 constexpr bool ENABLE_CAVES        = true;
 constexpr bool ENABLE_RIVERS       = true;
 constexpr bool ENABLE_ORES         = true;
+
+// =============================================================================
+// SKY & CLOUDS
+// =============================================================================
+
+// Cloud layer
+constexpr float CLOUD_HEIGHT        = 128.0f;  // Y position (lowered for better visibility)
+constexpr float CLOUD_SIZE          = 800.0f;  // Size of cloud plane (increased for 20-chunk radius)
+constexpr float CLOUD_SPEED         = 0.01f;   // Drift speed (UV units/sec)
+constexpr float CLOUD_SCALE         = 4.0f;    // UV tiling (larger = more cloud repeats)
+
+// Day/Night cycle (Minecraft: 20 min = 24000 ticks = 1 day)
+constexpr float DAY_DURATION        = 1200.0f; // Seconds per full day (20 minutes)
+constexpr float DAWN_TIME           = 0.25f;   // 6:00 AM
+constexpr float DUSK_TIME           = 0.75f;   // 6:00 PM
+
+// Celestials (sun/moon billboards)
+constexpr float SUN_SIZE            = 48.0f;   // Billboard size in world units
+constexpr float MOON_SIZE           = 40.0f;   // Slightly smaller than sun
+constexpr float SKY_RADIUS          = 180.0f;  // Distance to sun/moon from player
+
+// =============================================================================
+// WEATHER
+// =============================================================================
+
+// Weather particles (toggle via K key)
+constexpr float RAIN_PARTICLE_SIZE  = 0.3f;    // Width of rain streak
+constexpr float RAIN_SPEED          = 25.0f;   // Fall speed (blocks/sec)
+constexpr int   RAIN_DENSITY        = 1500;    // Number of particles
+constexpr float SNOW_SPEED          = 3.0f;    // Slower than rain
 
 } // namespace Config
 } // namespace Voxel

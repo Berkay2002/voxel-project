@@ -129,5 +129,12 @@ _Refer to `.agent/architecture_reference.md` for the full architectural breakdow
   - Block outline/highlight for targeted block
   - Wireframe cube rendered via BlockOutline class
   - outline.vert/frag shaders
+- **Phase 14**: ✅ Complete (2026-01-04)
+  - Cloud layer at Y=192 with scrolling texture
+  - Sun/moon billboards with 8 moon phases
+  - Day/night cycle (20-min, Minecraft default)
+  - Dynamic sky color and lighting
+  - Rain/snow weather particles (K key toggle)
+  - SkyRenderer class with modular subsystems
 - **Phase 13C**: 🔜 Backlog (Greedy Meshing LOD)
   - Reduced vertex count for distant chunks

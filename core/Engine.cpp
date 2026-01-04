@@ -10,6 +10,7 @@
 // Voxel system
 #include "world/BlockRegistry.h"
 #include "world/ChunkManager.h"
+#include "world/SkyRenderer.h"
 #include "world/SpaghettiCaveCarver.h"
 
 #include <glad/gl.h>
@@ -203,6 +204,13 @@ void Engine::SetupWorld() {
   // Create chunk manager
   m_ChunkManager = std::make_unique<Voxel::ChunkManager>();
 
+  // Create and setup sky renderer
+  m_SkyRenderer = std::make_unique<Voxel::SkyRenderer>();
+  if (!m_SkyRenderer->Setup()) {
+    LOG_ERROR("Failed to setup SkyRenderer");
+    // Non-fatal: continue without sky
+  }
+
   LOG_INFO("World setup complete with " + 
            std::to_string(blockRegistry.GetBlockCount()) + " blocks and " +
            std::to_string(texRegistry.GetTextureCount()) + " textures");
@@ -234,6 +242,33 @@ void Engine::ProcessInput(float deltaTime) {
     }
   } else {
     mKeyWasPressed = false;
+  }
+
+  // Toggle weather with K key
+  static bool kKeyWasPressed = false;
+  if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS) {
+    if (!kKeyWasPressed) {
+      kKeyWasPressed = true;
+      if (m_SkyRenderer) {
+        m_SkyRenderer->ToggleWeather();
+        if (m_SkyRenderer->IsWeatherEnabled()) {
+          LOG_INFO("Weather enabled (K to toggle)");
+        } else {
+          LOG_INFO("Weather disabled (K to toggle)");
+        }
+      }
+    }
+  } else {
+    kKeyWasPressed = false;
+  }
+
+  // Fast-forward time with J key (hold to advance quickly)
+  if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS) {
+    if (m_SkyRenderer) {
+      // Advance time by 5% per second while held (20 seconds = full day cycle)
+      float newTime = m_SkyRenderer->GetTimeOfDay() + deltaTime * 0.05f;
+      m_SkyRenderer->SetTimeOfDay(newTime);
+    }
   }
 
   // Keyboard input
@@ -294,6 +329,11 @@ void Engine::Update(float deltaTime) {
   // Update targeted block for interaction (raycast from camera)
   UpdateTargetedBlock();
 
+  // Update sky (time of day, cloud drift)
+  if (m_SkyRenderer && m_Camera) {
+    m_SkyRenderer->Update(deltaTime, m_Camera->GetPosition());
+  }
+
   // Update chunk loading based on camera position
   if (m_ChunkManager && m_Camera) {
     m_ChunkManager->Update(m_Camera->GetPosition());
@@ -303,8 +343,13 @@ void Engine::Update(float deltaTime) {
 }
 
 void Engine::Render() {
-  // Clear with sky blue color
-  glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
+  // Get dynamic sky color from SkyRenderer (or default sky blue)
+  glm::vec3 skyColor = glm::vec3(0.5f, 0.7f, 1.0f);
+  if (m_SkyRenderer) {
+    skyColor = m_SkyRenderer->GetSkyColor();
+  }
+  
+  glClearColor(skyColor.r, skyColor.g, skyColor.b, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   TextureRegistry& texRegistry = TextureRegistry::Instance();
@@ -313,13 +358,32 @@ void Engine::Render() {
     float aspectRatio = static_cast<float>(m_Window->GetWidth()) / 
                         static_cast<float>(m_Window->GetHeight());
 
+    // === PASS 0: Render sky (depth write OFF) ===
+    if (m_SkyRenderer) {
+      glDepthMask(GL_FALSE);  // Don't write to depth buffer
+      m_SkyRenderer->Render(*m_Camera, aspectRatio);
+      glDepthMask(GL_TRUE);   // Re-enable depth writing
+    }
+
     // Bind texture array from registry
     texRegistry.GetTextureArray()->Bind(0);
 
-    // Update camera position for fog calculation (changes each frame)
+    // Update shader uniforms for dynamic lighting
     glm::vec3 cameraPos = m_Camera->GetPosition();
+    glm::vec3 lightDir = glm::normalize(glm::vec3(0.5f, 1.0f, 0.3f));
+    float ambientStrength = 0.35f;
+    
+    // Use sun direction and ambient from SkyRenderer if available
+    if (m_SkyRenderer) {
+      lightDir = m_SkyRenderer->GetSunDirection();
+      ambientStrength = m_SkyRenderer->GetAmbientStrength();
+    }
+    
     m_Shader->Bind();
     m_Shader->SetVec3("u_CameraPos", cameraPos);
+    m_Shader->SetVec3("u_LightDir", lightDir);
+    m_Shader->SetFloat("u_AmbientStrength", ambientStrength);
+    m_Shader->SetVec3("u_FogColor", skyColor);  // Fog matches sky
     m_Shader->Unbind();
 
     // === PASS 1: Render opaque geometry ===
@@ -346,9 +410,12 @@ void Engine::Render() {
       // Disable backface culling for water so we can see it from underwater
       glDisable(GL_CULL_FACE);
       
-      // Update camera position for water fog (reuse cameraPos from above)
+      // Update water shader uniforms
       m_WaterShader->Bind();
       m_WaterShader->SetVec3("u_CameraPos", cameraPos);
+      m_WaterShader->SetVec3("u_LightDir", lightDir);
+      m_WaterShader->SetFloat("u_AmbientStrength", ambientStrength);
+      m_WaterShader->SetVec3("u_FogColor", skyColor);
       m_WaterShader->Unbind();
       
       // Render water
@@ -356,6 +423,18 @@ void Engine::Render() {
       
       // Restore state
       glEnable(GL_CULL_FACE);
+      glDepthMask(GL_TRUE);
+      glDisable(GL_BLEND);
+    }
+
+    // === PASS 2.5: Render weather (rain/snow) ===
+    if (m_SkyRenderer && m_SkyRenderer->IsWeatherEnabled()) {
+      glEnable(GL_BLEND);
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      glDepthMask(GL_FALSE);
+      
+      m_SkyRenderer->RenderWeather(*m_Camera, aspectRatio);
+      
       glDepthMask(GL_TRUE);
       glDisable(GL_BLEND);
     }
