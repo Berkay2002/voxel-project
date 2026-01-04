@@ -1,5 +1,6 @@
 #pragma once
 
+#include "world/VoxelRaycast.h"
 #include <memory>
 
 namespace Core {
@@ -31,22 +32,38 @@ public:
 
   void Run();
 
+  // Mouse button callback (called from GLFW callback)
+  void OnMouseButton(int button, int action);
+
 private:
   void Update(float deltaTime);
   void Render();
   void SetupWorld();
   void ProcessInput(float deltaTime);
+  void UpdateTargetedBlock();
 
   std::unique_ptr<Window> m_Window;
   
   // Rendering resources
   std::unique_ptr<Shader> m_Shader;           // Opaque geometry shader (lit)
   std::unique_ptr<Shader> m_WaterShader;      // Water shader (transparent)
+  std::unique_ptr<Shader> m_UIShader;         // UI shader (crosshair, etc.)
   // Note: Textures are managed by TextureRegistry singleton
   std::unique_ptr<Camera> m_Camera;
 
   // World system
   std::unique_ptr<Voxel::ChunkManager> m_ChunkManager;
+
+  // Block interaction (raycasting)
+  Voxel::RaycastResult m_TargetedBlock;       // Currently targeted block
+  Voxel::BlockID m_SelectedBlockType = 3;     // Block type to place (Stone by default)
+
+  // UI rendering (crosshair)
+  unsigned int m_CrosshairVAO = 0;
+  unsigned int m_CrosshairVBO = 0;
+  void SetupCrosshair();
+  void RenderCrosshair();
+  void CleanupCrosshair();
 
   // Input state
   float m_LastX = 400.0f;
@@ -56,3 +73,4 @@ private:
 };
 
 } // namespace Core
+

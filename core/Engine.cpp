@@ -19,6 +19,10 @@
 
 namespace Core {
 
+// Static pointer for GLFW callback access (can't use glfwSetWindowUserPointer, 
+// it's already used by Window class for resize callback)
+static Engine* s_Instance = nullptr;
+
 Engine::Engine() {
   LOG_INFO("Initializing Engine...");
 
@@ -59,15 +63,29 @@ Engine::Engine() {
   // Create camera - position it to view the terrain (lower for cave visibility)
   m_Camera = std::make_unique<Camera>(glm::vec3(8.0f, 60.0f, 40.0f));
 
+  // Setup mouse button callback for block interaction
+  // Note: We can't use glfwSetWindowUserPointer here because Window.cpp already uses it
+  // Instead, we store a static pointer to this Engine instance
+  s_Instance = this;
+  glfwSetMouseButtonCallback(m_Window->GetHandle(), [](GLFWwindow* /*window*/, int button, int action, int /*mods*/) {
+    if (s_Instance) {
+      s_Instance->OnMouseButton(button, action);
+    }
+  });
+
   // Setup world rendering
   SetupWorld();
 
   LOG_INFO("Engine initialized successfully!");
-  LOG_INFO("Controls: WASD to move, Space/Shift for up/down");
-  LOG_INFO("Press M to capture mouse for looking around, ESC to quit");
+  LOG_INFO("Controls: WASD to move, Space/Shift for up/down, M to capture mouse");
+  LOG_INFO("Left-click to break blocks, Right-click to place blocks");
 }
 
-Engine::~Engine() { LOG_INFO("Engine shutting down..."); }
+Engine::~Engine() { 
+  CleanupCrosshair();
+  s_Instance = nullptr;  // Clear static pointer
+  LOG_INFO("Engine shutting down..."); 
+}
 
 void Engine::SetupWorld() {
   // Create lit shader with lighting support (for opaque geometry)
@@ -87,6 +105,18 @@ void Engine::SetupWorld() {
     LOG_ERROR("Failed to create water shader");
     return;
   }
+
+  // Create UI shader (for crosshair and other 2D elements)
+  m_UIShader = std::make_unique<Shader>("assets/shaders/ui.vert",
+                                        "assets/shaders/ui.frag");
+
+  if (!m_UIShader->IsValid()) {
+    LOG_ERROR("Failed to create UI shader");
+    return;
+  }
+
+  // Setup crosshair
+  SetupCrosshair();
 
   // =========================================================================
   // PHASE 11: Data-driven texture and block loading via registries
@@ -239,6 +269,9 @@ void Engine::Update(float deltaTime) {
   glfwPollEvents();
   ProcessInput(deltaTime);
 
+  // Update targeted block for interaction (raycast from camera)
+  UpdateTargetedBlock();
+
   // Update chunk loading based on camera position
   if (m_ChunkManager && m_Camera) {
     m_ChunkManager->Update(m_Camera->GetPosition());
@@ -287,6 +320,130 @@ void Engine::Render() {
     }
 
     texRegistry.GetTextureArray()->Unbind();
+  }
+
+  // === PASS 3: Render UI (crosshair) ===
+  RenderCrosshair();
+}
+
+void Engine::UpdateTargetedBlock() {
+  if (m_Camera && m_ChunkManager) {
+    Ray ray = m_Camera->GetViewRay();
+    m_TargetedBlock = Voxel::Raycast(ray, *m_ChunkManager, 8.0f);
+  }
+}
+
+void Engine::OnMouseButton(int button, int action) {
+  // Only process press events when cursor is captured
+  if (action != GLFW_PRESS || !m_CursorCaptured) {
+    return;
+  }
+  
+  // Check if we're targeting a block
+  if (!m_TargetedBlock.hit) {
+    return;
+  }
+  
+  if (button == GLFW_MOUSE_BUTTON_LEFT) {
+    // Break block - set to Air
+    m_ChunkManager->SetBlock(
+        m_TargetedBlock.blockPos.x,
+        m_TargetedBlock.blockPos.y,
+        m_TargetedBlock.blockPos.z,
+        Voxel::BLOCK_AIR
+    );
+    LOG_DEBUG("Broke block at (" + 
+        std::to_string(m_TargetedBlock.blockPos.x) + ", " +
+        std::to_string(m_TargetedBlock.blockPos.y) + ", " +
+        std::to_string(m_TargetedBlock.blockPos.z) + ")");
+  } 
+  else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+    // Place block at previous position (empty space before the hit block)
+    m_ChunkManager->SetBlock(
+        m_TargetedBlock.previousPos.x,
+        m_TargetedBlock.previousPos.y,
+        m_TargetedBlock.previousPos.z,
+        m_SelectedBlockType
+    );
+    LOG_DEBUG("Placed block at (" +
+        std::to_string(m_TargetedBlock.previousPos.x) + ", " +
+        std::to_string(m_TargetedBlock.previousPos.y) + ", " +
+        std::to_string(m_TargetedBlock.previousPos.z) + ")");
+  }
+}
+
+void Engine::SetupCrosshair() {
+  // Crosshair size in NDC (normalized device coordinates)
+  // Adjust these for larger/smaller crosshair
+  const float size = 0.02f;   // Length of each arm
+  const float gap = 0.005f;   // Gap in the center (optional, set to 0 for solid +)
+  
+  // Crosshair vertices: horizontal line + vertical line
+  // Drawing as GL_LINES (pairs of vertices)
+  float vertices[] = {
+      // Horizontal line (left to right)
+      -size, 0.0f,    // Left point
+       size, 0.0f,    // Right point
+      // Vertical line (bottom to top)
+       0.0f, -size,   // Bottom point
+       0.0f,  size    // Top point
+  };
+  
+  glGenVertexArrays(1, &m_CrosshairVAO);
+  glGenBuffers(1, &m_CrosshairVBO);
+  
+  glBindVertexArray(m_CrosshairVAO);
+  
+  glBindBuffer(GL_ARRAY_BUFFER, m_CrosshairVBO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  
+  // Position attribute (location 0)
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+  glEnableVertexAttribArray(0);
+  
+  glBindVertexArray(0);
+  
+  LOG_INFO("Crosshair initialized");
+}
+
+void Engine::RenderCrosshair() {
+  if (!m_UIShader || !m_UIShader->IsValid() || m_CrosshairVAO == 0) {
+    return;
+  }
+  
+  // Disable depth test for UI
+  glDisable(GL_DEPTH_TEST);
+  
+  // Enable blending for smooth edges (optional)
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  
+  // Set line width (may not work on all systems, but worth trying)
+  glLineWidth(2.0f);
+  
+  m_UIShader->Bind();
+  // White crosshair with slight transparency
+  m_UIShader->SetVec4("u_Color", glm::vec4(1.0f, 1.0f, 1.0f, 0.9f));
+  
+  glBindVertexArray(m_CrosshairVAO);
+  glDrawArrays(GL_LINES, 0, 4);  // 4 vertices = 2 lines
+  glBindVertexArray(0);
+  
+  m_UIShader->Unbind();
+  
+  // Restore state
+  glDisable(GL_BLEND);
+  glEnable(GL_DEPTH_TEST);
+}
+
+void Engine::CleanupCrosshair() {
+  if (m_CrosshairVAO != 0) {
+    glDeleteVertexArrays(1, &m_CrosshairVAO);
+    m_CrosshairVAO = 0;
+  }
+  if (m_CrosshairVBO != 0) {
+    glDeleteBuffers(1, &m_CrosshairVBO);
+    m_CrosshairVBO = 0;
   }
 }
 

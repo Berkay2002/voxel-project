@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Frustum.h"
+#include "Ray.h"
 #include <glm/glm.hpp>
 
 namespace Core {
@@ -18,6 +19,9 @@ public:
   // Frustum culling
   void UpdateFrustum(float aspectRatio);
   [[nodiscard]] const Frustum& GetFrustum() const { return m_Frustum; }
+
+  // Raycasting - get a ray from camera position in view direction
+  [[nodiscard]] Ray GetViewRay() const { return Ray(m_Position, m_Front); }
 
   // Movement (sprint = true for faster movement with CTRL held)
   void ProcessKeyboard(float deltaTime, bool forward, bool backward, 

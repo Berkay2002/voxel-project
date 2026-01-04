@@ -62,6 +62,14 @@ public:
     void SetLoadRadius(int radius) { m_LoadRadius = radius; }
     int GetLoadRadius() const { return m_LoadRadius; }
 
+    // Block access at world coordinates (for raycasting and interaction)
+    // Returns BLOCK_AIR if position is out of bounds or chunk not loaded
+    BlockID GetBlock(int worldX, int worldY, int worldZ) const;
+    
+    // Set a block at world coordinates, triggers mesh rebuild
+    // Does nothing if position is out of bounds or chunk not loaded
+    void SetBlock(int worldX, int worldY, int worldZ, BlockID block);
+
 private:
     // Convert world position to chunk coordinates
     ChunkCoord WorldToChunkCoord(const glm::vec3& worldPos) const;
@@ -77,6 +85,12 @@ private:
 
     // Check if a chunk should be loaded based on distance
     bool ShouldBeLoaded(int chunkX, int chunkZ, const ChunkCoord& center) const;
+
+    // Rebuild a chunk's mesh asynchronously (used after block changes)
+    void RebuildChunkMesh(int chunkX, int chunkZ);
+
+    // Const version of GetChunk for raycasting
+    const Chunk* GetChunkConst(int chunkX, int chunkZ) const;
 
     // Chunk storage
     std::unordered_map<ChunkCoord, std::unique_ptr<Chunk>, ChunkCoordHash> m_Chunks;

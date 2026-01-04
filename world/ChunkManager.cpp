@@ -250,4 +250,102 @@ void ChunkManager::RenderWater(Core::Shader& waterShader, Core::Camera& camera, 
     waterShader.Unbind();
 }
 
+const Chunk* ChunkManager::GetChunkConst(int chunkX, int chunkZ) const {
+    ChunkCoord coord = {chunkX, chunkZ};
+    auto it = m_Chunks.find(coord);
+    if (it != m_Chunks.end()) {
+        return it->second.get();
+    }
+    return nullptr;
+}
+
+BlockID ChunkManager::GetBlock(int worldX, int worldY, int worldZ) const {
+    // Bounds check for Y (chunks extend from 0 to CHUNK_HEIGHT)
+    if (worldY < 0 || worldY >= CHUNK_HEIGHT) {
+        return BLOCK_AIR;
+    }
+    
+    // Convert world coords to chunk coords using floor division
+    int chunkX = (worldX >= 0) ? (worldX / CHUNK_WIDTH) : ((worldX + 1) / CHUNK_WIDTH - 1);
+    int chunkZ = (worldZ >= 0) ? (worldZ / CHUNK_DEPTH) : ((worldZ + 1) / CHUNK_DEPTH - 1);
+    
+    // Local coords within chunk
+    int localX = worldX - chunkX * CHUNK_WIDTH;
+    int localZ = worldZ - chunkZ * CHUNK_DEPTH;
+    
+    // Find chunk (const access)
+    const Chunk* chunk = GetChunkConst(chunkX, chunkZ);
+    if (!chunk) {
+        return BLOCK_AIR;
+    }
+    
+    // Get block from chunk (BlockType is compatible with BlockID via uint16_t)
+    return static_cast<BlockID>(chunk->GetBlock(localX, worldY, localZ));
+}
+
+void ChunkManager::SetBlock(int worldX, int worldY, int worldZ, BlockID block) {
+    // Bounds check for Y
+    if (worldY < 0 || worldY >= CHUNK_HEIGHT) {
+        return;
+    }
+    
+    // Convert world coords to chunk coords using floor division
+    int chunkX = (worldX >= 0) ? (worldX / CHUNK_WIDTH) : ((worldX + 1) / CHUNK_WIDTH - 1);
+    int chunkZ = (worldZ >= 0) ? (worldZ / CHUNK_DEPTH) : ((worldZ + 1) / CHUNK_DEPTH - 1);
+    
+    // Local coords within chunk
+    int localX = worldX - chunkX * CHUNK_WIDTH;
+    int localZ = worldZ - chunkZ * CHUNK_DEPTH;
+    
+    // Find chunk
+    Chunk* chunk = GetChunk(chunkX, chunkZ);
+    if (!chunk) {
+        return;
+    }
+    
+    // Set block in chunk (convert BlockID to BlockType)
+    chunk->SetBlock(localX, worldY, localZ, static_cast<BlockType>(block));
+    
+    // Rebuild this chunk's mesh
+    RebuildChunkMesh(chunkX, chunkZ);
+    
+    // Check if we need to rebuild neighbor chunks (block on boundary)
+    if (localX == 0) {
+        RebuildChunkMesh(chunkX - 1, chunkZ);
+    } else if (localX == CHUNK_WIDTH - 1) {
+        RebuildChunkMesh(chunkX + 1, chunkZ);
+    }
+    
+    if (localZ == 0) {
+        RebuildChunkMesh(chunkX, chunkZ - 1);
+    } else if (localZ == CHUNK_DEPTH - 1) {
+        RebuildChunkMesh(chunkX, chunkZ + 1);
+    }
+}
+
+void ChunkManager::RebuildChunkMesh(int chunkX, int chunkZ) {
+    Chunk* chunk = GetChunk(chunkX, chunkZ);
+    if (!chunk || chunk->GetState() != ChunkState::Ready) {
+        return;
+    }
+    
+    // Mark chunk as needing rebuild
+    chunk->SetState(ChunkState::Meshing);
+    
+    // Submit async mesh rebuild task
+    Chunk* rawPtr = chunk;
+    m_ThreadPool.detach_task([this, rawPtr, chunkX, chunkZ]() {
+        // Build mesh data without OpenGL calls (thread-safe)
+        ChunkMeshData meshData = rawPtr->GenerateMeshData();
+        
+        // Queue for main thread upload
+        {
+            std::lock_guard<std::mutex> lock(m_PendingMeshMutex);
+            m_PendingMeshes.push(std::move(meshData));
+        }
+        
+        rawPtr->SetState(ChunkState::MeshPending);
+    });
+}
+
 } // namespace Voxel

@@ -120,3 +120,4 @@ _Refer to `.agent/architecture_reference.md` for the full architectural breakdow
   - Block breaking (left-click) and placing (right-click)
   - Async mesh rebuilding after block modifications
   - Cross-chunk boundary handling
+  - Crosshair UI overlay (Minecraft-style + at screen center)

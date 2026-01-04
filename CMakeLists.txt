@@ -105,6 +105,7 @@ add_executable(${PROJECT_NAME}
     world/ChunkManager.cpp
     world/SpaghettiCaveCarver.cpp
     world/BlockRegistry.cpp
+    world/VoxelRaycast.cpp
     core/TextureRegistry.cpp
 )
 
