@@ -469,34 +469,126 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
 - [ ] No shadow acne or peter-panning artifacts
 - [ ] Performance acceptable (>30 FPS)
 
-## Phase 16: Screen-Space Ambient Occlusion (Backlog)
+## Phase 16A: SSAO (Screen-Space Ambient Occlusion) (In Progress)
 
-### Part A: G-Buffer
+> Key decisions: Half-res SSAO, Forward + Depth Pre-pass (not full deferred)
+> Vertex AO kept: SSAO ON = use SSAO only, SSAO OFF = use vertex AO
 
-- [ ] Create `core/GBuffer.h/.cpp` (MRT framebuffer)
-- [ ] Position buffer (RGB32F)
-- [ ] Normal buffer (RGB16F)
-- [ ] Depth buffer (DEPTH24_STENCIL8)
+### SSAO System
 
-### Part B: SSAO Pass
+- [ ] Create `core/SSAO.h` header
+- [ ] Create `core/SSAO.cpp` implementation
+  - [ ] Create depth pre-pass FBO (depth + normal textures)
+  - [ ] Generate 64-sample hemisphere kernel
+  - [ ] Generate 4×4 noise texture
+  - [ ] Create half-res SSAO FBO
+  - [ ] Create half-res blur FBO
+  - [ ] Setup fullscreen quad VAO
 
-- [ ] Create `ssao.frag` shader
-- [ ] Generate random kernel (64 samples)
-- [ ] Generate noise texture (4×4)
-- [ ] Hemisphere sampling around fragment
+### Shaders
 
-### Part C: Blur and Compose
+- [ ] Create `assets/shaders/fullscreen.vert` (reusable fullscreen quad)
+- [ ] Create `assets/shaders/depth_normal.vert` (depth pre-pass)
+- [ ] Create `assets/shaders/depth_normal.frag` (output view-space normals)
+- [ ] Create `assets/shaders/ssao.frag` (64-sample hemisphere)
+- [ ] Create `assets/shaders/ssao_blur.frag` (5×5 box blur)
+- [ ] Modify `assets/shaders/lit.frag` (either/or AO logic: SSAO or vertex AO)
 
-- [ ] Create `ssao_blur.frag` (bilateral blur)
-- [ ] Create `compose.frag` (combine lighting + AO)
-- [ ] Update `Engine.cpp` with SSAO render passes
+### Engine Integration
+
+- [ ] Add SSAO member to `Engine.h`
+- [ ] Initialize SSAO in `Engine::SetupWorld()`
+- [ ] Add depth pre-pass to `ChunkManager` (`RenderAllDepth()`)
+- [ ] Modify `Engine::Render()` for SSAO passes
+  - [ ] Depth + normal pre-pass
+  - [ ] SSAO calculation pass
+  - [ ] Blur pass
+  - [ ] Bind SSAO texture for lit.frag
+- [ ] Add O key toggle for SSAO
+- [ ] Handle window resize
+
+### Configuration
+
+- [ ] Add SSAO config to `WorldConfig.h`
+  - [ ] SSAO_ENABLED, SSAO_KERNEL_SIZE, SSAO_RADIUS, SSAO_BIAS, SSAO_POWER
 
 ### Validation
 
 - [ ] Build succeeds
 - [ ] Corners and crevices show darkening
-- [ ] Performance acceptable with SSAO enabled
-- [ ] Toggle on/off for comparison
+- [ ] No banding or noise artifacts
+- [ ] O key toggles SSAO on/off
+- [ ] Vertex AO works when SSAO is off
+- [ ] Performance acceptable (>30 FPS)
+
+---
+
+## Phase 16B: Compute Shader Mesh Generation (Pending)
+
+> GPU-based mesh generation using compute shaders and SSBOs
+> Keeps vertex AO calculation (matches CPU path)
+
+### ComputeMesher Class
+
+- [ ] Create `core/ComputeMesher.h` header
+- [ ] Create `core/ComputeMesher.cpp` implementation
+  - [ ] Setup Block Data SSBO (65536 × uint16_t)
+  - [ ] Setup Opaque Vertex Output SSBO
+  - [ ] Setup Water Vertex Output SSBO
+  - [ ] Setup atomic counter buffer
+  - [ ] Setup Block Lookup Table SSBO (per-block textures/flags)
+
+### Compute Shader
+
+- [ ] Create `assets/shaders/mesh_gen.comp`
+  - [ ] Read block data from SSBO
+  - [ ] Face culling for all 6 directions
+  - [ ] Vertex AO calculation (24-neighbor lookup)
+  - [ ] Emit quads with position, UV, normal, AO, texIndex, tint
+  - [ ] Separate opaque and water output
+  - [ ] Handle chunk boundary blocks
+
+### ChunkManager Integration
+
+- [ ] Add `ComputeMesher` member to `ChunkManager`
+- [ ] Add `m_UseComputeMeshing` toggle
+- [ ] Modify `LoadChunkAsync()` for GPU path
+  - [ ] Upload block data to SSBO
+  - [ ] Dispatch compute shader
+- [ ] Modify `ProcessPendingMeshes()` for compute results
+  - [ ] Read atomic counter for vertex count
+  - [ ] Copy SSBO to chunk VBO
+- [ ] Add G key toggle for CPU/GPU meshing
+
+### Configuration
+
+- [ ] Add compute meshing config to `WorldConfig.h`
+
+### Validation
+
+- [ ] Build succeeds
+- [ ] Meshes identical to CPU-generated
+- [ ] No missing faces
+- [ ] G key toggles CPU/GPU meshing
+- [ ] Performance improvement measurable
+
+---
+
+## Phase 16C: Compute Shader Terrain Generation (Backlog)
+
+> Deferred due to GPU/CPU noise precision concerns
+> Risk: chunk boundary artifacts if GPU noise doesn't match FastNoiseLite exactly
+
+### If Implemented Later
+
+- [ ] Create `world/ComputeTerrainGenerator.h/.cpp`
+- [ ] Implement GPU Perlin noise in GLSL
+- [ ] Implement GPU Cellular noise in GLSL
+- [ ] Create `assets/shaders/terrain_gen.comp`
+- [ ] Create `assets/shaders/cave_carve.comp`
+- [ ] Create `assets/shaders/ore_gen.comp`
+- [ ] Validate output matches CPU FastNoiseLite exactly
+- [ ] Test chunk boundary alignment
 
 ## Phase 17: Voxel Light Propagation (Backlog)
 
