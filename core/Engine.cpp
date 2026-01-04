@@ -4,6 +4,7 @@
 #include "core/Logger.h"
 #include "core/Shader.h"
 #include "core/ShadowMap.h"
+#include "core/SSAO.h"
 #include "core/TextureArray.h"
 #include "core/TextureRegistry.h"
 #include "core/Window.h"
@@ -148,6 +149,15 @@ void Engine::SetupWorld() {
   } else {
     LOG_INFO("Shadow map created: " + std::to_string(Voxel::Config::SHADOW_MAP_RESOLUTION) + "x" + 
              std::to_string(Voxel::Config::SHADOW_MAP_RESOLUTION));
+  }
+
+  // Create SSAO system (half-resolution for performance)
+  m_SSAO = std::make_unique<SSAO>();
+  if (!m_SSAO->Setup(m_Window->GetWidth(), m_Window->GetHeight())) {
+    LOG_WARN("SSAO setup failed, disabling");
+    m_SSAO.reset();
+  } else {
+    LOG_INFO("SSAO initialized (O key to toggle)");
   }
 
   // Setup crosshair
@@ -304,6 +314,24 @@ void Engine::ProcessInput(float deltaTime) {
       float newTime = m_SkyRenderer->GetTimeOfDay() - deltaTime * 0.05f;
       m_SkyRenderer->SetTimeOfDay(newTime);
     }
+  }
+
+  // Toggle SSAO with O key
+  static bool oKeyWasPressed = false;
+  if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
+    if (!oKeyWasPressed) {
+      oKeyWasPressed = true;
+      if (m_SSAO) {
+        m_SSAO->SetEnabled(!m_SSAO->IsEnabled());
+        if (m_SSAO->IsEnabled()) {
+          LOG_INFO("SSAO enabled (O to toggle)");
+        } else {
+          LOG_INFO("SSAO disabled - using vertex AO (O to toggle)");
+        }
+      }
+    }
+  } else {
+    oKeyWasPressed = false;
   }
 
   // Keyboard input
@@ -471,6 +499,36 @@ void Engine::RenderShadowPass() {
   m_ShadowMap->Unbind();
 }
 
+void Engine::RenderSSAOPass() {
+  if (!m_SSAO || !m_SSAO->IsEnabled() || !m_ChunkManager || !m_Camera) {
+    return;
+  }
+
+  float aspectRatio = static_cast<float>(m_Window->GetWidth()) / 
+                      static_cast<float>(m_Window->GetHeight());
+
+  // Get projection and view matrices for SSAO
+  glm::mat4 projection = m_Camera->GetProjectionMatrix(aspectRatio);
+  glm::mat4 view = m_Camera->GetViewMatrix();
+
+  // === DEPTH PRE-PASS ===
+  // Render all chunks to depth + normal buffer
+  m_SSAO->BeginDepthPass();
+  
+  Shader* depthShader = m_SSAO->GetDepthShader();
+  if (depthShader) {
+    m_ChunkManager->RenderAllDepth(*depthShader, view, projection);
+  }
+  
+  m_SSAO->EndDepthPass();
+
+  // === SSAO CALCULATION + BLUR ===
+  m_SSAO->Calculate(projection, view);
+
+  // Restore main viewport
+  glViewport(0, 0, m_Window->GetWidth(), m_Window->GetHeight());
+}
+
 void Engine::Render() {
   // Get dynamic sky color from SkyRenderer (or default sky blue)
   glm::vec3 skyColor = glm::vec3(0.5f, 0.7f, 1.0f);
@@ -516,7 +574,13 @@ void Engine::Render() {
       RenderShadowPass();
     }
 
-    // Restore main viewport after shadow pass
+    // === SSAO PASS ===
+    bool ssaoEnabled = m_SSAO && m_SSAO->IsEnabled();
+    if (ssaoEnabled) {
+      RenderSSAOPass();
+    }
+
+    // Restore main viewport after off-screen passes
     glViewport(0, 0, m_Window->GetWidth(), m_Window->GetHeight());
 
     // === PASS 0: Render sky (depth write OFF) ===
@@ -533,6 +597,11 @@ void Engine::Render() {
     if (shadowsEnabled) {
       m_ShadowMap->BindTexture(1);
     }
+
+    // Bind SSAO texture for sampling (slot 2)
+    if (ssaoEnabled) {
+      m_SSAO->BindAOTexture(2);
+    }
     
     m_Shader->Bind();
     m_Shader->SetVec3("u_CameraPos", cameraPos);
@@ -544,6 +613,10 @@ void Engine::Render() {
     if (shadowsEnabled) {
       m_Shader->SetMat4("u_LightSpaceMatrix", m_LightSpaceMatrix);
     }
+    // SSAO uniforms
+    m_Shader->SetBool("u_SSAOEnabled", ssaoEnabled);
+    m_Shader->SetInt("u_SSAOTex", 2);  // SSAO texture in slot 2
+    m_Shader->SetVec2("u_ScreenSize", glm::vec2(m_Window->GetWidth(), m_Window->GetHeight()));
     m_Shader->Unbind();
 
     // === PASS 1: Render opaque geometry ===

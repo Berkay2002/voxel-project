@@ -25,6 +25,11 @@ uniform sampler2DShadow u_ShadowMap;    // Shadow depth texture with hardware co
 uniform bool u_ShadowsEnabled;          // Toggle for shadows (disabled at night)
 uniform float u_ShadowStrength;         // Fade factor for smooth dawn/dusk transition (0-1)
 
+// SSAO (Screen-Space Ambient Occlusion) uniforms
+uniform sampler2D u_SSAOTex;            // Blurred SSAO texture
+uniform bool u_SSAOEnabled;             // Toggle for SSAO (O key)
+uniform vec2 u_ScreenSize;              // Screen dimensions for UV calculation
+
 /**
  * Calculate shadow factor using PCF (Percentage Closer Filtering)
  * Returns 1.0 = fully lit, 0.0 = fully in shadow
@@ -83,9 +88,17 @@ void main() {
         shadow = mix(1.0, rawShadow, u_ShadowStrength);
     }
     
+    // Select AO source: SSAO (screen-space) or vertex AO
+    // When SSAO is enabled, use the screen-space result; otherwise use per-vertex AO
+    float ao = AO;  // Default to vertex AO
+    if (u_SSAOEnabled) {
+        vec2 screenUV = gl_FragCoord.xy / u_ScreenSize;
+        ao = texture(u_SSAOTex, screenUV).r;
+    }
+    
     // Combine ambient + diffuse * shadow, modulated by ambient occlusion
     // Shadows only affect diffuse lighting, not ambient
-    float lighting = (u_AmbientStrength + (1.0 - u_AmbientStrength) * diff * shadow) * AO;
+    float lighting = (u_AmbientStrength + (1.0 - u_AmbientStrength) * diff * shadow) * ao;
     
     vec3 litColor = tintedColor * lighting;
     

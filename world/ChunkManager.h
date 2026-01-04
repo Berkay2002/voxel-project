@@ -56,6 +56,10 @@ public:
     // Uses light-space matrix for frustum and MVP
     void RenderAllShadow(Core::Shader& shadowShader, const glm::mat4& lightSpaceMatrix);
 
+    // Render all chunks for SSAO depth pre-pass
+    // Outputs depth + view-space normals for SSAO calculation
+    void RenderAllDepth(Core::Shader& depthShader, const glm::mat4& view, const glm::mat4& projection);
+
     // Get chunk at given chunk coordinates (nullptr if not loaded)
     Chunk* GetChunk(int chunkX, int chunkZ);
 

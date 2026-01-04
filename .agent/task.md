@@ -469,52 +469,52 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
 - [ ] No shadow acne or peter-panning artifacts
 - [ ] Performance acceptable (>30 FPS)
 
-## Phase 16A: SSAO (Screen-Space Ambient Occlusion) (In Progress)
+## Phase 16A: SSAO (Screen-Space Ambient Occlusion) ✅
 
 > Key decisions: Half-res SSAO, Forward + Depth Pre-pass (not full deferred)
 > Vertex AO kept: SSAO ON = use SSAO only, SSAO OFF = use vertex AO
 
 ### SSAO System
 
-- [ ] Create `core/SSAO.h` header
-- [ ] Create `core/SSAO.cpp` implementation
-  - [ ] Create depth pre-pass FBO (depth + normal textures)
-  - [ ] Generate 64-sample hemisphere kernel
-  - [ ] Generate 4×4 noise texture
-  - [ ] Create half-res SSAO FBO
-  - [ ] Create half-res blur FBO
-  - [ ] Setup fullscreen quad VAO
+- [x] Create `core/SSAO.h` header
+- [x] Create `core/SSAO.cpp` implementation
+  - [x] Create depth pre-pass FBO (depth + normal textures)
+  - [x] Generate 64-sample hemisphere kernel
+  - [x] Generate 4×4 noise texture
+  - [x] Create half-res SSAO FBO
+  - [x] Create half-res blur FBO
+  - [x] Setup fullscreen quad VAO
 
 ### Shaders
 
-- [ ] Create `assets/shaders/fullscreen.vert` (reusable fullscreen quad)
-- [ ] Create `assets/shaders/depth_normal.vert` (depth pre-pass)
-- [ ] Create `assets/shaders/depth_normal.frag` (output view-space normals)
-- [ ] Create `assets/shaders/ssao.frag` (64-sample hemisphere)
-- [ ] Create `assets/shaders/ssao_blur.frag` (5×5 box blur)
-- [ ] Modify `assets/shaders/lit.frag` (either/or AO logic: SSAO or vertex AO)
+- [x] Create `assets/shaders/fullscreen.vert` (reusable fullscreen quad)
+- [x] Create `assets/shaders/depth_normal.vert` (depth pre-pass)
+- [x] Create `assets/shaders/depth_normal.frag` (output view-space normals)
+- [x] Create `assets/shaders/ssao.frag` (64-sample hemisphere)
+- [x] Create `assets/shaders/ssao_blur.frag` (5×5 box blur)
+- [x] Modify `assets/shaders/lit.frag` (either/or AO logic: SSAO or vertex AO)
 
 ### Engine Integration
 
-- [ ] Add SSAO member to `Engine.h`
-- [ ] Initialize SSAO in `Engine::SetupWorld()`
-- [ ] Add depth pre-pass to `ChunkManager` (`RenderAllDepth()`)
-- [ ] Modify `Engine::Render()` for SSAO passes
-  - [ ] Depth + normal pre-pass
-  - [ ] SSAO calculation pass
-  - [ ] Blur pass
-  - [ ] Bind SSAO texture for lit.frag
-- [ ] Add O key toggle for SSAO
+- [x] Add SSAO member to `Engine.h`
+- [x] Initialize SSAO in `Engine::SetupWorld()`
+- [x] Add depth pre-pass to `ChunkManager` (`RenderAllDepth()`)
+- [x] Modify `Engine::Render()` for SSAO passes
+  - [x] Depth + normal pre-pass
+  - [x] SSAO calculation pass
+  - [x] Blur pass
+  - [x] Bind SSAO texture for lit.frag
+- [x] Add O key toggle for SSAO
 - [ ] Handle window resize
 
 ### Configuration
 
-- [ ] Add SSAO config to `WorldConfig.h`
-  - [ ] SSAO_ENABLED, SSAO_KERNEL_SIZE, SSAO_RADIUS, SSAO_BIAS, SSAO_POWER
+- [x] Add SSAO config to `WorldConfig.h`
+  - [x] SSAO_ENABLED, SSAO_KERNEL_SIZE, SSAO_RADIUS, SSAO_BIAS, SSAO_POWER
 
 ### Validation
 
-- [ ] Build succeeds
+- [x] Build succeeds
 - [ ] Corners and crevices show darkening
 - [ ] No banding or noise artifacts
 - [ ] O key toggles SSAO on/off

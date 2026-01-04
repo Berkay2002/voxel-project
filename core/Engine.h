@@ -13,6 +13,7 @@ class TextureArray;
 class Camera;
 class BlockOutline;
 class ShadowMap;
+class SSAO;
 
 } // namespace Core
 
@@ -43,6 +44,7 @@ private:
   void Update(float deltaTime);
   void Render();
   void RenderShadowPass();  // Shadow map depth pass
+  void RenderSSAOPass();    // SSAO depth + calculation passes
   void SetupWorld();
   void ProcessInput(float deltaTime);
   void UpdateTargetedBlock();
@@ -60,6 +62,7 @@ private:
 
   // Shadow mapping
   std::unique_ptr<ShadowMap> m_ShadowMap;
+  std::unique_ptr<SSAO> m_SSAO;
   glm::mat4 m_LightSpaceMatrix = glm::mat4(1.0f);
 
   // World system

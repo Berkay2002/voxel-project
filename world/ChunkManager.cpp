@@ -274,6 +274,32 @@ void ChunkManager::RenderAllShadow(Core::Shader& shadowShader, const glm::mat4& 
     shadowShader.Unbind();
 }
 
+void ChunkManager::RenderAllDepth(Core::Shader& depthShader, const glm::mat4& view, const glm::mat4& projection) {
+    depthShader.Bind();
+    
+    for (const auto& [coord, chunk] : m_Chunks) {
+        if (!chunk->HasMesh()) {
+            continue;
+        }
+        
+        // Calculate world position for this chunk
+        float worldX = static_cast<float>(coord.x * CHUNK_WIDTH);
+        float worldZ = static_cast<float>(coord.z * CHUNK_DEPTH);
+        
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(worldX, 0.0f, worldZ));
+        glm::mat4 modelView = view * model;
+        glm::mat4 mvp = projection * modelView;
+        
+        depthShader.SetMat4("u_MVP", mvp);
+        depthShader.SetMat4("u_ModelView", modelView);
+        
+        // Render only opaque geometry (no water for SSAO)
+        chunk->Render();
+    }
+    
+    depthShader.Unbind();
+}
+
 const Chunk* ChunkManager::GetChunkConst(int chunkX, int chunkZ) const {
     ChunkCoord coord = {chunkX, chunkZ};
     auto it = m_Chunks.find(coord);

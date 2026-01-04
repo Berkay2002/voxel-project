@@ -101,6 +101,7 @@ add_executable(${PROJECT_NAME}
     core/Frustum.cpp
     core/BlockOutline.cpp
     core/ShadowMap.cpp
+    core/SSAO.cpp
     world/Chunk.cpp
     world/ChunkMeshBuilder.cpp
     world/TerrainGenerator.cpp

@@ -187,5 +187,15 @@ constexpr float RAIN_SPEED          = 25.0f;   // Fall speed (blocks/sec)
 constexpr int   RAIN_DENSITY        = 1500;    // Number of particles
 constexpr float SNOW_SPEED          = 3.0f;    // Slower than rain
 
+// =============================================================================
+// SSAO (Screen-Space Ambient Occlusion)
+// =============================================================================
+
+constexpr bool  SSAO_ENABLED        = true;    // Enable by default
+constexpr int   SSAO_KERNEL_SIZE    = 64;      // Number of hemisphere samples
+constexpr float SSAO_RADIUS         = 0.5f;    // Sampling radius (world units)
+constexpr float SSAO_BIAS           = 0.025f;  // Depth bias to prevent self-occlusion
+constexpr float SSAO_POWER          = 2.0f;    // Contrast (higher = stronger AO)
+
 } // namespace Config
 } // namespace Voxel
