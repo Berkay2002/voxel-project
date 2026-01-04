@@ -39,6 +39,7 @@ SkyRenderer::SkyRenderer() = default;
 
 SkyRenderer::~SkyRenderer() {
     CleanupClouds();
+    CleanupVolumetricClouds();
     CleanupCelestials();
     CleanupWeather();
 }
@@ -54,6 +55,11 @@ bool SkyRenderer::Setup() {
     
     if (!SetupClouds()) {
         LOG_ERROR("Failed to setup clouds");
+        success = false;
+    }
+    
+    if (!SetupVolumetricClouds()) {
+        LOG_ERROR("Failed to setup volumetric clouds");
         success = false;
     }
     
@@ -108,15 +114,28 @@ void SkyRenderer::Render(const Core::Camera& camera, float aspectRatio) {
     glm::mat4 view = camera.GetViewMatrix();
     glm::mat4 proj = camera.GetProjectionMatrix(aspectRatio);
     glm::mat4 viewProj = proj * view;
+    (void)viewProj;  // Reserved for future use
     
     // Render celestials first (behind clouds)
     if (m_CelestialsEnabled) {
         RenderCelestials(camera, aspectRatio);
     }
     
-    // Render clouds
+    // Render clouds based on CloudMode setting
     if (m_CloudsEnabled) {
-        RenderClouds(camera, aspectRatio);
+        switch (Config::CLOUD_MODE) {
+            case Config::CloudMode::OFF:
+                // Clouds disabled
+                break;
+            case Config::CloudMode::FAST:
+                // 2D flat cloud plane
+                RenderClouds(camera, aspectRatio);
+                break;
+            case Config::CloudMode::FANCY:
+                // 3D volumetric cloud voxels
+                RenderVolumetricClouds(camera, aspectRatio);
+                break;
+        }
     }
 }
 
@@ -410,6 +429,243 @@ void SkyRenderer::CleanupClouds() {
     if (m_CloudIBO != 0) {
         glDeleteBuffers(1, &m_CloudIBO);
         m_CloudIBO = 0;
+    }
+}
+
+// =============================================================================
+// VOLUMETRIC CLOUDS IMPLEMENTATION (Fancy 3D mode)
+// =============================================================================
+
+bool SkyRenderer::SetupVolumetricClouds() {
+    // Load volumetric cloud shader
+    m_VolumetricCloudShader = std::make_unique<Core::Shader>(
+        "assets/shaders/volumetric_cloud.vert",
+        "assets/shaders/volumetric_cloud.frag"
+    );
+    
+    if (!m_VolumetricCloudShader->IsValid()) {
+        LOG_ERROR("Failed to load volumetric cloud shader");
+        return false;
+    }
+    
+    // Initialize FastNoiseLite for organic cloud shapes
+    m_CloudNoise = std::make_unique<FastNoiseLite>(Config::TERRAIN_SEED + 999);
+    m_CloudNoise->SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+    m_CloudNoise->SetFrequency(Config::CLOUD_NOISE_SCALE);
+    // Use FBm (Fractal Brownian Motion) for multi-octave detail
+    m_CloudNoise->SetFractalType(FastNoiseLite::FractalType_FBm);
+    m_CloudNoise->SetFractalOctaves(3);        // 3 layers of detail
+    m_CloudNoise->SetFractalLacunarity(2.0f);  // Frequency multiplier per octave
+    m_CloudNoise->SetFractalGain(0.5f);        // Amplitude reduction per octave
+    
+    // Create initial empty VAO/VBO - mesh will be built on first render
+    glGenVertexArrays(1, &m_VolumetricCloudVAO);
+    glGenBuffers(1, &m_VolumetricCloudVBO);
+    
+    // Reset grid center to force initial mesh build
+    m_LastCloudGridCenter = glm::ivec2(INT_MAX, INT_MAX);
+    
+    LOG_INFO("Volumetric cloud system initialized with FastNoiseLite");
+    return true;
+}
+
+bool SkyRenderer::IsCloudOccupied(int gridX, int gridZ) const {
+    if (!m_CloudNoise) return false;
+    
+    // Apply drift offset for animation (cloud movement)
+    float x = static_cast<float>(gridX) + m_CloudOffset * 8.0f;
+    float z = static_cast<float>(gridZ);
+    
+    // Sample FastNoiseLite - returns values in [-1, 1] range
+    float noiseValue = m_CloudNoise->GetNoise(x, z);
+    
+    // Normalize to [0, 1] range for threshold comparison
+    float normalized = (noiseValue + 1.0f) * 0.5f;
+    
+    return normalized > Config::CLOUD_THRESHOLD;
+}
+
+void SkyRenderer::RebuildCloudMesh(int centerX, int centerZ) {
+    // Vertex structure: pos(3) + normal(3) + lightLevel(1)
+    std::vector<float> vertices;
+    vertices.reserve(Config::CLOUD_GRID_RADIUS * Config::CLOUD_GRID_RADIUS * 36 * 7);  // Rough estimate
+    
+    const float blockSize = Config::CLOUD_BLOCK_SIZE;
+    const float cloudY = Config::CLOUD_HEIGHT;
+    const float cloudHeight = Config::CLOUD_BLOCK_HEIGHT;
+    const int radius = Config::CLOUD_GRID_RADIUS;
+    
+    // Helper to add a face with pre-baked lighting
+    auto addFace = [&](float x, float y, float z, float size, float height,
+                       float nx, float ny, float nz, float light) {
+        // Determine face orientation and generate quad vertices
+        if (ny > 0.5f) {
+            // Top face (+Y)
+            float y1 = y + height;
+            vertices.insert(vertices.end(), {x, y1, z,             nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x + size, y1, z,      nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x + size, y1, z + size, nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x, y1, z,             nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x + size, y1, z + size, nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x, y1, z + size,      nx, ny, nz, light});
+        } else if (ny < -0.5f) {
+            // Bottom face (-Y)
+            vertices.insert(vertices.end(), {x, y, z + size,       nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x + size, y, z + size, nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x + size, y, z,       nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x, y, z + size,       nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x + size, y, z,       nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x, y, z,              nx, ny, nz, light});
+        } else if (nz > 0.5f) {
+            // Front face (+Z)
+            vertices.insert(vertices.end(), {x, y, z + size,       nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x + size, y, z + size, nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x + size, y + height, z + size, nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x, y, z + size,       nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x + size, y + height, z + size, nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x, y + height, z + size, nx, ny, nz, light});
+        } else if (nz < -0.5f) {
+            // Back face (-Z)
+            vertices.insert(vertices.end(), {x + size, y, z,       nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x, y, z,              nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x, y + height, z,     nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x + size, y, z,       nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x, y + height, z,     nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x + size, y + height, z, nx, ny, nz, light});
+        } else if (nx > 0.5f) {
+            // Right face (+X)
+            vertices.insert(vertices.end(), {x + size, y, z + size, nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x + size, y, z,       nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x + size, y + height, z, nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x + size, y, z + size, nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x + size, y + height, z, nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x + size, y + height, z + size, nx, ny, nz, light});
+        } else if (nx < -0.5f) {
+            // Left face (-X)
+            vertices.insert(vertices.end(), {x, y, z,              nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x, y, z + size,       nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x, y + height, z + size, nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x, y, z,              nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x, y + height, z + size, nx, ny, nz, light});
+            vertices.insert(vertices.end(), {x, y + height, z,     nx, ny, nz, light});
+        }
+    };
+    
+    // Iterate over cloud grid
+    for (int gz = -radius; gz <= radius; gz++) {
+        for (int gx = -radius; gx <= radius; gx++) {
+            int worldGX = centerX + gx;
+            int worldGZ = centerZ + gz;
+            
+            if (!IsCloudOccupied(worldGX, worldGZ)) continue;
+            
+            // Calculate world position of this cloud block
+            float x = static_cast<float>(worldGX) * blockSize;
+            float z = static_cast<float>(worldGZ) * blockSize;
+            
+            // Check neighbors for face culling
+            bool hasTop = true;     // Always render top (no clouds above)
+            bool hasBottom = true;  // Always render bottom (no clouds below)
+            bool hasFront = !IsCloudOccupied(worldGX, worldGZ + 1);
+            bool hasBack = !IsCloudOccupied(worldGX, worldGZ - 1);
+            bool hasRight = !IsCloudOccupied(worldGX + 1, worldGZ);
+            bool hasLeft = !IsCloudOccupied(worldGX - 1, worldGZ);
+            
+            // Add visible faces with two-tone lighting
+            if (hasTop)    addFace(x, cloudY, z, blockSize, cloudHeight, 0, 1, 0, Config::CLOUD_LIGHT_TOP);
+            if (hasBottom) addFace(x, cloudY, z, blockSize, cloudHeight, 0, -1, 0, Config::CLOUD_LIGHT_BOTTOM);
+            if (hasFront)  addFace(x, cloudY, z, blockSize, cloudHeight, 0, 0, 1, Config::CLOUD_LIGHT_SIDE);
+            if (hasBack)   addFace(x, cloudY, z, blockSize, cloudHeight, 0, 0, -1, Config::CLOUD_LIGHT_SIDE);
+            if (hasRight)  addFace(x, cloudY, z, blockSize, cloudHeight, 1, 0, 0, Config::CLOUD_LIGHT_SIDE);
+            if (hasLeft)   addFace(x, cloudY, z, blockSize, cloudHeight, -1, 0, 0, Config::CLOUD_LIGHT_SIDE);
+        }
+    }
+    
+    m_VolumetricCloudVertexCount = static_cast<int>(vertices.size() / 7);
+    
+    // Upload to GPU
+    glBindVertexArray(m_VolumetricCloudVAO);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, m_VolumetricCloudVBO);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_DYNAMIC_DRAW);
+    
+    // Position (location 0)
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    
+    // Normal (location 1)
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    
+    // Light level (location 2)
+    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+    
+    glBindVertexArray(0);
+}
+
+void SkyRenderer::RenderVolumetricClouds(const Core::Camera& camera, float aspectRatio) {
+    if (!m_VolumetricCloudShader || !m_VolumetricCloudShader->IsValid()) {
+        return;
+    }
+    
+    glm::vec3 camPos = camera.GetPosition();
+    
+    // Check if camera moved to a new grid cell - rebuild mesh if needed
+    int newCenterX = static_cast<int>(std::floor(camPos.x / Config::CLOUD_BLOCK_SIZE));
+    int newCenterZ = static_cast<int>(std::floor(camPos.z / Config::CLOUD_BLOCK_SIZE));
+    
+    if (newCenterX != m_LastCloudGridCenter.x || newCenterZ != m_LastCloudGridCenter.y) {
+        RebuildCloudMesh(newCenterX, newCenterZ);
+        m_LastCloudGridCenter = glm::ivec2(newCenterX, newCenterZ);
+    }
+    
+    if (m_VolumetricCloudVertexCount == 0) return;
+    
+    glm::mat4 view = camera.GetViewMatrix();
+    glm::mat4 proj = camera.GetProjectionMatrix(aspectRatio);
+    glm::mat4 viewProj = proj * view;
+    
+    // Calculate cloud brightness based on time of day
+    float brightness = 1.0f;
+    float t = m_TimeOfDay;
+    if (t < 0.2f || t > 0.8f) {
+        brightness = 0.3f;
+    } else if (t < 0.3f) {
+        brightness = glm::mix(0.3f, 1.0f, (t - 0.2f) / 0.1f);
+    } else if (t > 0.7f) {
+        brightness = glm::mix(1.0f, 0.3f, (t - 0.7f) / 0.1f);
+    }
+    
+    m_VolumetricCloudShader->Bind();
+    m_VolumetricCloudShader->SetMat4("u_ViewProj", viewProj);
+    m_VolumetricCloudShader->SetVec3("u_CameraPos", camPos);
+    m_VolumetricCloudShader->SetVec3("u_SkyColor", GetSkyColor());
+    m_VolumetricCloudShader->SetVec3("u_SunDirection", GetSunDirection());
+    m_VolumetricCloudShader->SetFloat("u_Brightness", brightness);
+    m_VolumetricCloudShader->SetFloat("u_FogStart", 80.0f);
+    m_VolumetricCloudShader->SetFloat("u_FogEnd", Config::CLOUD_GRID_RADIUS * Config::CLOUD_BLOCK_SIZE * 0.9f);
+    
+    // Disable backface culling so clouds visible from inside
+    glDisable(GL_CULL_FACE);
+    
+    glBindVertexArray(m_VolumetricCloudVAO);
+    glDrawArrays(GL_TRIANGLES, 0, m_VolumetricCloudVertexCount);
+    glBindVertexArray(0);
+    
+    glEnable(GL_CULL_FACE);
+    
+    m_VolumetricCloudShader->Unbind();
+}
+
+void SkyRenderer::CleanupVolumetricClouds() {
+    if (m_VolumetricCloudVAO != 0) {
+        glDeleteVertexArrays(1, &m_VolumetricCloudVAO);
+        m_VolumetricCloudVAO = 0;
+    }
+    if (m_VolumetricCloudVBO != 0) {
+        glDeleteBuffers(1, &m_VolumetricCloudVBO);
+        m_VolumetricCloudVBO = 0;
     }
 }
 

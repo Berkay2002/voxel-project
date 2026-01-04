@@ -2,6 +2,7 @@
 
 #include <glm/glm.hpp>
 #include <memory>
+#include <FastNoiseLite.h>
 
 namespace Core {
 class Shader;
@@ -118,7 +119,7 @@ private:
     int m_DayCount = 0;         // For moon phase cycling
     
     // =========================================================================
-    // CLOUD LAYER (Phase 14A)
+    // CLOUD LAYER (Phase 14A) - Fast 2D mode
     // =========================================================================
     
     bool m_CloudsEnabled = true;
@@ -134,6 +135,30 @@ private:
     bool SetupClouds();
     void RenderClouds(const Core::Camera& camera, float aspectRatio);
     void CleanupClouds();
+    
+    // =========================================================================
+    // VOLUMETRIC CLOUDS (Phase 14E) - Fancy 3D mode
+    // =========================================================================
+    
+    std::unique_ptr<Core::Shader> m_VolumetricCloudShader;
+    unsigned int m_VolumetricCloudVAO = 0;
+    unsigned int m_VolumetricCloudVBO = 0;
+    int m_VolumetricCloudVertexCount = 0;
+    glm::ivec2 m_LastCloudGridCenter{0, 0};  // For mesh caching
+    
+    // FastNoiseLite for organic cloud shapes (replaces sin/cos noise)
+    std::unique_ptr<FastNoiseLite> m_CloudNoise;
+    
+    bool SetupVolumetricClouds();
+    void RenderVolumetricClouds(const Core::Camera& camera, float aspectRatio);
+    void RebuildCloudMesh(int centerX, int centerZ);
+    void CleanupVolumetricClouds();
+    
+    /**
+     * Sample cloud texture for occupancy at grid coordinates
+     * @return true if cloud cell is occupied (alpha > threshold)
+     */
+    bool IsCloudOccupied(int gridX, int gridZ) const;
     
     // =========================================================================
     // CELESTIALS - SUN & MOON (Phase 14B)

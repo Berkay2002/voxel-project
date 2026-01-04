@@ -132,11 +132,31 @@ constexpr bool ENABLE_ORES         = true;
 // SKY & CLOUDS
 // =============================================================================
 
-// Cloud layer
-constexpr float CLOUD_HEIGHT        = 128.0f;  // Y position (lowered for better visibility)
-constexpr float CLOUD_SIZE          = 800.0f;  // Size of cloud plane (increased for 20-chunk radius)
+// Cloud rendering mode
+enum class CloudMode { OFF, FAST, FANCY };
+constexpr CloudMode CLOUD_MODE      = CloudMode::FANCY;  // Default to fancy 3D clouds
+
+// Cloud layer (shared settings)
+constexpr float CLOUD_HEIGHT        = 128.0f;  // Y position
 constexpr float CLOUD_SPEED         = 0.01f;   // Drift speed (UV units/sec)
-constexpr float CLOUD_SCALE         = 4.0f;    // UV tiling (larger = more cloud repeats)
+
+// Fast mode (2D flat plane)
+constexpr float CLOUD_SIZE          = 800.0f;  // Size of cloud plane
+constexpr float CLOUD_SCALE         = 4.0f;    // UV tiling
+
+// Fancy mode (3D volumetric voxels)
+constexpr float CLOUD_BLOCK_SIZE    = 12.0f;   // World units per cloud cell
+constexpr float CLOUD_BLOCK_HEIGHT  = 4.0f;    // Extrusion height (thin slab)
+constexpr int   CLOUD_GRID_RADIUS   = 24;      // Cells around camera (render distance)
+constexpr float CLOUD_THRESHOLD     = 0.55f;   // Occupancy threshold (higher = sparser clouds)
+
+// Two-tone lighting for volumetric clouds (minimal contrast for natural look)
+constexpr float CLOUD_LIGHT_TOP     = 1.0f;    // Top face brightness
+constexpr float CLOUD_LIGHT_SIDE    = 0.98f;   // Side face brightness
+constexpr float CLOUD_LIGHT_BOTTOM  = 0.96f;   // Bottom face brightness (subtle shadow)
+
+// Cloud noise scale (lower = bigger clouds, more spread out)
+constexpr float CLOUD_NOISE_SCALE   = 0.08f;   // Cloud blob size (0.05 = huge, 0.2 = small)
 
 // Day/Night cycle (Minecraft: 20 min = 24000 ticks = 1 day)
 constexpr float DAY_DURATION        = 1200.0f; // Seconds per full day (20 minutes)
