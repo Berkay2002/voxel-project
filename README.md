@@ -36,6 +36,24 @@ The engine features a modular core decoupled from game logic, a centralized conf
   - Volumetric Clouds and Distance Fog.
   - Weather System (Rain/Snow).
 
+## Demo
+
+### Surface Exploration
+
+<div align="center">
+
+![Surface Demo](demo/demo_surface.gif)
+
+</div>
+
+### Cave Generation
+
+<div align="center">
+
+![Cave Demo](demo/demo_caves.gif)
+
+</div>
+
 ## Tech Stack
 
 - **Language**: C++20
@@ -60,7 +78,7 @@ The engine features a modular core decoupled from game logic, a centralized conf
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/voxel-project.git
+git clone https://github.com/berkay2002/voxel-project.git
 cd voxel-project
 
 # Configure the project
