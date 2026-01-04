@@ -121,3 +121,13 @@ _Refer to `.agent/architecture_reference.md` for the full architectural breakdow
   - Async mesh rebuilding after block modifications
   - Cross-chunk boundary handling
   - Crosshair UI overlay (Minecraft-style + at screen center)
+- **Phase 13A**: ✅ Complete (2026-01-04)
+  - Distance fog in lit/water shaders
+  - Linear fog blending based on camera distance
+  - Configurable FOG_START/FOG_END in WorldConfig.h
+- **Phase 13B**: ✅ Complete (2026-01-04)
+  - Block outline/highlight for targeted block
+  - Wireframe cube rendered via BlockOutline class
+  - outline.vert/frag shaders
+- **Phase 13C**: 🔜 Backlog (Greedy Meshing LOD)
+  - Reduced vertex count for distant chunks

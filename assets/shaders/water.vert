@@ -12,12 +12,14 @@ out vec3 Normal;
 out float AO;
 out float TexIndex;
 out vec3 TintColor;
+out vec3 FragWorldPos;  // World-space position for fog calculation
 
 uniform mat4 u_MVP;
 uniform mat4 u_Model;
 uniform float u_Time;  // For optional animated UVs
 
 void main() {
+    vec4 worldPos = u_Model * vec4(aPos, 1.0);
     gl_Position = u_MVP * vec4(aPos, 1.0);
     
     // Simple UV animation (optional - subtle wave effect)
@@ -30,4 +32,6 @@ void main() {
     AO = aAO;
     TexIndex = aTexIndex;
     TintColor = aTintColor;
+    FragWorldPos = worldPos.xyz;
 }
+

@@ -371,7 +371,7 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
 - [x] Add raycasting to `ChunkManager` for world queries (`GetBlock()`, `SetBlock()`)
 - [x] Hook up mouse click events in `Engine.cpp`
 - [x] Crosshair UI overlay (`assets/shaders/ui.vert/frag`, `SetupCrosshair()`, `RenderCrosshair()`)
-- [ ] Visual feedback for targeted block (highlight/outline) - Future enhancement
+- [x] Visual feedback for targeted block (highlight/outline) - Implemented in Phase 13B
 
 ### Block Interaction
 

@@ -113,6 +113,14 @@ constexpr float DIAMOND_THRESHOLD = 0.965f;
 constexpr float DIAMOND_VEIN_FREQ = 0.16f;
 
 // =============================================================================
+// DISTANCE FOG
+// =============================================================================
+
+constexpr float FOG_START           = 80.0f;   // Start fading at this distance (blocks)
+constexpr float FOG_END             = 128.0f;  // Fully fogged at this distance (blocks)
+// Fog color matches sky: RGB (0.5, 0.7, 1.0) - set in Engine.cpp
+
+// =============================================================================
 // FEATURES TOGGLE
 // =============================================================================
 

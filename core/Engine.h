@@ -10,6 +10,7 @@ class Shader;
 class Texture;
 class TextureArray;
 class Camera;
+class BlockOutline;
 
 } // namespace Core
 
@@ -48,6 +49,7 @@ private:
   std::unique_ptr<Shader> m_Shader;           // Opaque geometry shader (lit)
   std::unique_ptr<Shader> m_WaterShader;      // Water shader (transparent)
   std::unique_ptr<Shader> m_UIShader;         // UI shader (crosshair, etc.)
+  std::unique_ptr<Shader> m_OutlineShader;    // Block outline shader
   // Note: Textures are managed by TextureRegistry singleton
   std::unique_ptr<Camera> m_Camera;
 
@@ -57,6 +59,9 @@ private:
   // Block interaction (raycasting)
   Voxel::RaycastResult m_TargetedBlock;       // Currently targeted block
   Voxel::BlockID m_SelectedBlockType = 3;     // Block type to place (Stone by default)
+
+  // Block outline rendering
+  std::unique_ptr<BlockOutline> m_BlockOutline;
 
   // UI rendering (crosshair)
   unsigned int m_CrosshairVAO = 0;

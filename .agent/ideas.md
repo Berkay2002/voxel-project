@@ -59,8 +59,8 @@
 
 ### Visual Enhancements
 
-- Distance fog (blend distant terrain into sky to hide chunk boundaries)
-- Block highlight/outline for targeted block
+- ~~Distance fog~~ ✅ Phase 13A
+- ~~Block highlight/outline for targeted block~~ ✅ Phase 13B
 - Day/night cycle with dynamic lighting
 - Shadows (shadow mapping)
 - Sky rendering with clouds

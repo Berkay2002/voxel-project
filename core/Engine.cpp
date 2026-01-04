@@ -1,4 +1,5 @@
 #include "core/Engine.h"
+#include "core/BlockOutline.h"
 #include "core/Camera.h"
 #include "core/Logger.h"
 #include "core/Shader.h"
@@ -115,8 +116,21 @@ void Engine::SetupWorld() {
     return;
   }
 
+  // Create outline shader (for block highlighting)
+  m_OutlineShader = std::make_unique<Shader>("assets/shaders/outline.vert",
+                                              "assets/shaders/outline.frag");
+
+  if (!m_OutlineShader->IsValid()) {
+    LOG_ERROR("Failed to create outline shader");
+    return;
+  }
+
   // Setup crosshair
   SetupCrosshair();
+
+  // Setup block outline
+  m_BlockOutline = std::make_unique<BlockOutline>();
+  m_BlockOutline->Setup();
 
   // =========================================================================
   // PHASE 11: Data-driven texture and block loading via registries
@@ -167,6 +181,10 @@ void Engine::SetupWorld() {
   m_Shader->SetVec3("u_LightDir", glm::normalize(glm::vec3(0.5f, 1.0f, 0.3f)));
   // Ambient strength: prevents pure black shadows
   m_Shader->SetFloat("u_AmbientStrength", 0.35f);
+  // Fog settings (color matches sky background)
+  m_Shader->SetVec3("u_FogColor", glm::vec3(0.5f, 0.7f, 1.0f));
+  m_Shader->SetFloat("u_FogStart", Voxel::Config::FOG_START);
+  m_Shader->SetFloat("u_FogEnd", Voxel::Config::FOG_END);
   m_Shader->Unbind();
 
   // Set water shader uniforms
@@ -176,6 +194,10 @@ void Engine::SetupWorld() {
   m_WaterShader->SetFloat("u_AmbientStrength", 0.35f);
   m_WaterShader->SetFloat("u_WaterAlpha", 0.7f);  // Water transparency
   m_WaterShader->SetFloat("u_Time", 0.0f);        // For optional animation
+  // Fog settings (same as lit shader)
+  m_WaterShader->SetVec3("u_FogColor", glm::vec3(0.5f, 0.7f, 1.0f));
+  m_WaterShader->SetFloat("u_FogStart", Voxel::Config::FOG_START);
+  m_WaterShader->SetFloat("u_FogEnd", Voxel::Config::FOG_END);
   m_WaterShader->Unbind();
 
   // Create chunk manager
@@ -294,8 +316,22 @@ void Engine::Render() {
     // Bind texture array from registry
     texRegistry.GetTextureArray()->Bind(0);
 
+    // Update camera position for fog calculation (changes each frame)
+    glm::vec3 cameraPos = m_Camera->GetPosition();
+    m_Shader->Bind();
+    m_Shader->SetVec3("u_CameraPos", cameraPos);
+    m_Shader->Unbind();
+
     // === PASS 1: Render opaque geometry ===
     m_ChunkManager->RenderAll(*m_Shader, *m_Camera, aspectRatio);
+
+    // === PASS 1.5: Render block outline (if targeting a block) ===
+    if (m_TargetedBlock.hit && m_OutlineShader && m_OutlineShader->IsValid() && m_BlockOutline) {
+      glm::mat4 view = m_Camera->GetViewMatrix();
+      glm::mat4 proj = m_Camera->GetProjectionMatrix(aspectRatio);
+      glm::mat4 viewProj = proj * view;
+      m_BlockOutline->Render(m_TargetedBlock.blockPos, *m_OutlineShader, viewProj);
+    }
 
     // === PASS 2: Render transparent water ===
     if (m_WaterShader && m_WaterShader->IsValid()) {
@@ -309,6 +345,11 @@ void Engine::Render() {
       
       // Disable backface culling for water so we can see it from underwater
       glDisable(GL_CULL_FACE);
+      
+      // Update camera position for water fog (reuse cameraPos from above)
+      m_WaterShader->Bind();
+      m_WaterShader->SetVec3("u_CameraPos", cameraPos);
+      m_WaterShader->Unbind();
       
       // Render water
       m_ChunkManager->RenderWater(*m_WaterShader, *m_Camera, aspectRatio);
