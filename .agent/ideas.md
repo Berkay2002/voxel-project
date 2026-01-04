@@ -2,46 +2,86 @@
 
 ## Architecture Notes from `voxel.jpg`
 
-- **Math**: GLM
-- **Graphics**: OpenGL (GLAD/GLEW)
-- **Window**: GLFW
-- **Noise**: FastNoiseLite
+- **Math**: GLM ✅
+- **Graphics**: OpenGL (GLAD) ✅
+- **Window**: GLFW ✅
+- **Noise**: FastNoiseLite ✅
 
-## Optimization Ideas
+## Implemented Features
 
-- **Face Culling**: Don't render internal blocks.
-- **Multithreading**: Chunk generation in background.
-- **RLE**: for chunk storage?
+### Core Engine (Phase 1-2) ✅
 
-## Visual Style
+- Window management, input handling
+- Shader system, buffer abstractions
+- Texture system with stb_image
+- Camera with WASD + mouse look
 
-- Pure voxel?
-- Ambient Occlusion?
-- Shadows?
+### Voxel World (Phase 3-4) ✅
 
-## Deferred Features (Future Phases)
+- Block types with data-driven registry
+- Chunk data structure (16×16×256)
+- Mesh generation with face culling
+- ChunkManager with dynamic loading/unloading
 
-### High Priority (Phase 5)
+### Optimization (Phase 5) ✅
 
-- **Multithreading**: Chunk generation in background threads (critical for performance)
-- **Frustum Culling**: Don't render chunks behind camera (easy win)
+- **Face Culling**: Internal faces not rendered
+- **Multithreading**: Async chunk generation via BS::thread_pool
+- **Frustum Culling**: Chunks behind camera not rendered
 
-### Medium Priority (Phase 6)
+### Visual (Phase 6-7, 10) ✅
 
-- **Water System**: Sea level at fixed Y (e.g., Y=40), water blocks, transparency
-- **Cave Generation**: 3D Perlin noise carving tunnels, ore veins at specific depths
-- **Texture Atlas**: Multiple block textures in one image, UV mapping per block type
+- **Ambient Occlusion**: Per-vertex AO on block corners
+- **Directional Lighting**: Sun with configurable direction
+- **Water System**: Transparent water with separate render pass
+- **Texture Array**: Multiple block textures via GL_TEXTURE_2D_ARRAY
 
-### Lower Priority (Future)
+### World Generation (Phase 8-9) ✅
 
-- **Biomes**: Temperature/humidity noise maps, biome-specific terrain & blocks
-- **Multiple Octaves**: Fractal Brownian Motion for more natural terrain
-- **Lighting**: Sunlight propagation, ambient occlusion
-- **Block Breaking/Placing**: Raycasting (DDA), player interaction
+- **Cave Generation**: Spaghetti caves with 3D Perlin noise
+- **Biomes**: Plains and Mountains with smooth transitions
+- **Rivers**: Cellular noise-based water bodies
 
-## Gameplay Ideas
+### Block & Texture System (Phase 11) ✅
 
-- Survival mode with health/hunger?
-- Creative mode with flying + infinite blocks?
-- Day/night cycle with lighting changes?
-- Simple mobs (slimes, zombies)?
+- **Data-driven blocks.json**: 18 block types
+- **BlockRegistry & TextureRegistry**: Singletons for scalable management
+- **Per-face textures**: Different textures for top/sides/bottom
+
+### Player Interaction (Phase 12) ✅
+
+- **Raycasting (DDA)**: Voxel ray traversal
+- **Block Breaking**: Left-click to remove blocks
+- **Block Placing**: Right-click to add blocks
+- **Crosshair UI**: Minecraft-style + at screen center
+
+## Future Ideas
+
+### Visual Enhancements
+
+- Distance fog (blend distant terrain into sky to hide chunk boundaries)
+- Block highlight/outline for targeted block
+- Day/night cycle with dynamic lighting
+- Shadows (shadow mapping)
+- Sky rendering with clouds
+
+### World Generation
+
+- Cheese caves (large caverns)
+- Noodle caves (thin connecting tunnels)
+- Trees and vegetation
+
+### Gameplay
+
+- Survival mode with health/hunger
+- Creative mode with flying + infinite blocks
+- Simple mobs (slimes, zombies)
+- Inventory system / hotbar for block selection
+- Save/load world to disk
+
+### Performance
+
+- RLE compression for chunk storage
+- Level of Detail (LOD) for distant chunks
+- Greedy meshing algorithm
+- Occlusion culling
