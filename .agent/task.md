@@ -431,3 +431,106 @@ Focus: Getting a window open, OpenGL context running, and basic engine loop.
 - [x] Snow particles using `snow.png` (64×256)
 - [x] Particle cylinder around player
 - [x] Toggle with K key
+
+### Part E: Volumetric Clouds (Fancy Mode)
+
+- [x] Create `volumetric_cloud.vert/frag` shaders
+- [x] FastNoiseLite for cloud shape generation
+- [x] 3D voxel-like cloud blocks with face culling
+- [x] Two-tone lighting (bright tops, shaded sides)
+
+## Phase 15: Shadow Mapping (Backlog)
+
+### Part A: Basic Shadow Map
+
+- [ ] Create `core/ShadowMap.h/.cpp` (depth-only FBO)
+- [ ] Create `shadow.vert/frag` shaders (depth pass)
+- [ ] Calculate light-space matrix from sun direction
+- [ ] Render scene from sun's POV for depth
+
+### Part B: Shader Integration
+
+- [ ] Update `lit.frag` with shadow sampling
+- [ ] Add `u_ShadowMap` and `u_LightSpaceMatrix` uniforms
+- [ ] Implement PCF (Percentage Closer Filtering) for soft shadows
+- [ ] Update `Engine.cpp` with shadow render pass
+
+### Part C: Cascaded Shadow Maps (CSM)
+
+- [ ] Split view frustum into 3 cascades
+- [ ] Multiple shadow maps per cascade (2048, 2048, 1024)
+- [ ] Select cascade in fragment shader based on depth
+- [ ] Blend between cascades for smooth transitions
+
+### Validation
+
+- [ ] Build succeeds
+- [ ] Shadows cast correctly at various sun angles
+- [ ] No shadow acne or peter-panning artifacts
+- [ ] Performance acceptable (>30 FPS)
+
+## Phase 16: Screen-Space Ambient Occlusion (Backlog)
+
+### Part A: G-Buffer
+
+- [ ] Create `core/GBuffer.h/.cpp` (MRT framebuffer)
+- [ ] Position buffer (RGB32F)
+- [ ] Normal buffer (RGB16F)
+- [ ] Depth buffer (DEPTH24_STENCIL8)
+
+### Part B: SSAO Pass
+
+- [ ] Create `ssao.frag` shader
+- [ ] Generate random kernel (64 samples)
+- [ ] Generate noise texture (4×4)
+- [ ] Hemisphere sampling around fragment
+
+### Part C: Blur and Compose
+
+- [ ] Create `ssao_blur.frag` (bilateral blur)
+- [ ] Create `compose.frag` (combine lighting + AO)
+- [ ] Update `Engine.cpp` with SSAO render passes
+
+### Validation
+
+- [ ] Build succeeds
+- [ ] Corners and crevices show darkening
+- [ ] Performance acceptable with SSAO enabled
+- [ ] Toggle on/off for comparison
+
+## Phase 17: Voxel Light Propagation (Backlog)
+
+### Part A: Skylight System
+
+- [ ] Create `world/LightMap.h` (per-chunk light storage)
+- [ ] Add `LightMap` member to `Chunk`
+- [ ] Implement skylight flood-fill from top
+- [ ] Light level 15 at top, decreases by 1 per block
+
+### Part B: Block Light System
+
+- [ ] Add `lightLevel` property to block definitions
+- [ ] Create light-emitting blocks (torch, glowstone)
+- [ ] Implement BFS propagation for block light
+- [ ] Handle chunk boundary propagation
+
+### Part C: Shader Integration
+
+- [ ] Add `lightLevel` attribute to `ChunkVertex`
+- [ ] Update `ChunkMeshBuilder` to sample light map
+- [ ] Update `lit.vert/frag` to use light level
+- [ ] Smooth light interpolation between blocks
+
+### Validation
+
+- [ ] Build succeeds
+- [ ] Underground caves are dark
+- [ ] Torches illuminate surrounding blocks
+- [ ] Light propagates across chunk boundaries
+
+## Future: RTX Migration (Research)
+
+- [ ] Evaluate Vulkan vs OptiX for ray tracing
+- [ ] Document OpenGL → Vulkan migration path
+- [ ] Prototype ray-traced shadows with VK_KHR_ray_tracing
+- [ ] Research AI denoising (OptiX AI Denoiser)
