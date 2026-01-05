@@ -102,6 +102,7 @@ add_executable(${PROJECT_NAME}
     core/BlockOutline.cpp
     core/ShadowMap.cpp
     core/SSAO.cpp
+    core/TextureRegistry.cpp
     world/Chunk.cpp
     world/ChunkMeshBuilder.cpp
     world/TerrainGenerator.cpp
@@ -110,7 +111,9 @@ add_executable(${PROJECT_NAME}
     world/BlockRegistry.cpp
     world/VoxelRaycast.cpp
     world/SkyRenderer.cpp
-    core/TextureRegistry.cpp
+    ui/UIRenderer.cpp
+    ui/TitleScreen.cpp
+    ui/LoadingScreen.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE

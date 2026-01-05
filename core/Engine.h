@@ -1,8 +1,10 @@
 #pragma once
 
+#include "core/GameState.h"
 #include "world/VoxelRaycast.h"
-#include <memory>
 #include <glm/glm.hpp>
+#include <memory>
+
 
 namespace Core {
 
@@ -20,7 +22,13 @@ class SSAO;
 namespace Voxel {
 class ChunkManager;
 class SkyRenderer;
-}
+} // namespace Voxel
+
+namespace UI {
+class UIRenderer;
+class TitleScreen;
+class LoadingScreen;
+} // namespace UI
 
 namespace Core {
 
@@ -41,22 +49,40 @@ public:
   void OnMouseButton(int button, int action);
 
 private:
+  // State-based update/render methods
+  void UpdateTitleScreen(float deltaTime);
+  void UpdateLoadingScreen(float deltaTime);
+  void RenderTitleScreen();
+  void RenderLoadingScreen();
+  void TransitionToState(GameState newState);
+
+  // Gameplay methods
   void Update(float deltaTime);
   void Render();
-  void RenderShadowPass();  // Shadow map depth pass
-  void RenderSSAOPass();    // SSAO depth + calculation passes
+  void RenderShadowPass(); // Shadow map depth pass
+  void RenderSSAOPass();   // SSAO depth + calculation passes
   void SetupWorld();
   void ProcessInput(float deltaTime);
   void UpdateTargetedBlock();
 
+  // Game state
+  GameState m_CurrentState = GameState::TITLE_SCREEN;
+  float m_LoadingProgress = 0.0f;
+  bool m_WorldSetupStarted = false;
+
   std::unique_ptr<Window> m_Window;
-  
+
+  // UI system
+  std::unique_ptr<UI::UIRenderer> m_UIRenderer;
+  std::unique_ptr<UI::TitleScreen> m_TitleScreen;
+  std::unique_ptr<UI::LoadingScreen> m_LoadingScreen;
+
   // Rendering resources
-  std::unique_ptr<Shader> m_Shader;           // Opaque geometry shader (lit)
-  std::unique_ptr<Shader> m_WaterShader;      // Water shader (transparent)
-  std::unique_ptr<Shader> m_UIShader;         // UI shader (crosshair, etc.)
-  std::unique_ptr<Shader> m_OutlineShader;    // Block outline shader
-  std::unique_ptr<Shader> m_ShadowShader;     // Shadow depth pass shader
+  std::unique_ptr<Shader> m_Shader;        // Opaque geometry shader (lit)
+  std::unique_ptr<Shader> m_WaterShader;   // Water shader (transparent)
+  std::unique_ptr<Shader> m_UIShader;      // UI shader (crosshair, etc.)
+  std::unique_ptr<Shader> m_OutlineShader; // Block outline shader
+  std::unique_ptr<Shader> m_ShadowShader;  // Shadow depth pass shader
   // Note: Textures are managed by TextureRegistry singleton
   std::unique_ptr<Camera> m_Camera;
 
@@ -70,8 +96,9 @@ private:
   std::unique_ptr<Voxel::SkyRenderer> m_SkyRenderer;
 
   // Block interaction (raycasting)
-  Voxel::RaycastResult m_TargetedBlock;       // Currently targeted block
-  Voxel::BlockID m_SelectedBlockType = 3;     // Block type to place (Stone by default)
+  Voxel::RaycastResult m_TargetedBlock; // Currently targeted block
+  Voxel::BlockID m_SelectedBlockType =
+      3; // Block type to place (Stone by default)
 
   // Block outline rendering
   std::unique_ptr<BlockOutline> m_BlockOutline;
@@ -91,4 +118,3 @@ private:
 };
 
 } // namespace Core
-
