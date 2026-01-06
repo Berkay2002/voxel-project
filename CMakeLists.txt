@@ -107,6 +107,7 @@ add_executable(${PROJECT_NAME}
     core/TextureRegistry.cpp
     core/DisplayConfig.cpp
     core/RenderConfig.cpp
+    core/SkyRenderer.cpp
     world/Chunk.cpp
     world/ChunkMeshBuilder.cpp
     world/TerrainGenerator.cpp
@@ -114,8 +115,6 @@ add_executable(${PROJECT_NAME}
     world/SpaghettiCaveCarver.cpp
     world/BlockRegistry.cpp
     world/VoxelRaycast.cpp
-    world/SkyRenderer.cpp
-    world/RuntimeConfig.cpp
     world/GameConfig.cpp
     ui/UIRenderer.cpp
     ui/TitleScreen.cpp

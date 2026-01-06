@@ -8,9 +8,6 @@ namespace Core {
 class Shader;
 class Texture;
 class Camera;
-} // namespace Core
-
-namespace Voxel {
 
 /**
  * SkyRenderer - Modular sky system for clouds, celestials, and weather.
@@ -48,13 +45,13 @@ public:
      * Render the sky (clouds, sun, moon)
      * Should be called BEFORE terrain, with depth write disabled
      */
-    void Render(const Core::Camera& camera, float aspectRatio);
+    void Render(const Camera& camera, float aspectRatio);
 
     /**
      * Render weather particles (rain/snow)
      * Should be called AFTER terrain with blending enabled
      */
-    void RenderWeather(const Core::Camera& camera, float aspectRatio);
+    void RenderWeather(const Camera& camera, float aspectRatio);
 
     // =========================================================================
     // TIME OF DAY
@@ -125,22 +122,22 @@ private:
     bool m_CloudsEnabled = true;
     float m_CloudOffset = 0.0f;  // UV offset for drift animation
     
-    std::unique_ptr<Core::Shader> m_CloudShader;
-    std::unique_ptr<Core::Texture> m_CloudTexture;
+    std::unique_ptr<Shader> m_CloudShader;
+    std::unique_ptr<Texture> m_CloudTexture;
     unsigned int m_CloudVAO = 0;
     unsigned int m_CloudVBO = 0;
     unsigned int m_CloudIBO = 0;
     int m_CloudIndexCount = 0;
     
     bool SetupClouds();
-    void RenderClouds(const Core::Camera& camera, float aspectRatio);
+    void RenderClouds(const Camera& camera, float aspectRatio);
     void CleanupClouds();
     
     // =========================================================================
     // VOLUMETRIC CLOUDS (Phase 14E) - Fancy 3D mode
     // =========================================================================
     
-    std::unique_ptr<Core::Shader> m_VolumetricCloudShader;
+    std::unique_ptr<Shader> m_VolumetricCloudShader;
     unsigned int m_VolumetricCloudVAO = 0;
     unsigned int m_VolumetricCloudVBO = 0;
     int m_VolumetricCloudVertexCount = 0;
@@ -150,7 +147,7 @@ private:
     std::unique_ptr<FastNoiseLite> m_CloudNoise;
     
     bool SetupVolumetricClouds();
-    void RenderVolumetricClouds(const Core::Camera& camera, float aspectRatio);
+    void RenderVolumetricClouds(const Camera& camera, float aspectRatio);
     void RebuildCloudMesh(int centerX, int centerZ);
     void CleanupVolumetricClouds();
     
@@ -166,14 +163,14 @@ private:
     
     bool m_CelestialsEnabled = true;
     
-    std::unique_ptr<Core::Shader> m_CelestialShader;
-    std::unique_ptr<Core::Texture> m_SunTexture;
-    std::unique_ptr<Core::Texture> m_MoonTexture;
+    std::unique_ptr<Shader> m_CelestialShader;
+    std::unique_ptr<Texture> m_SunTexture;
+    std::unique_ptr<Texture> m_MoonTexture;
     unsigned int m_BillboardVAO = 0;
     unsigned int m_BillboardVBO = 0;
     
     bool SetupCelestials();
-    void RenderCelestials(const Core::Camera& camera, float aspectRatio);
+    void RenderCelestials(const Camera& camera, float aspectRatio);
     void CleanupCelestials();
     
     /**
@@ -188,9 +185,9 @@ private:
     bool m_WeatherEnabled = false;  // Start disabled
     WeatherType m_WeatherType = WeatherType::Rain;
     
-    std::unique_ptr<Core::Shader> m_WeatherShader;
-    std::unique_ptr<Core::Texture> m_RainTexture;
-    std::unique_ptr<Core::Texture> m_SnowTexture;
+    std::unique_ptr<Shader> m_WeatherShader;
+    std::unique_ptr<Texture> m_RainTexture;
+    std::unique_ptr<Texture> m_SnowTexture;
     unsigned int m_WeatherVAO = 0;
     unsigned int m_WeatherVBO = 0;
     int m_WeatherParticleCount = 0;
@@ -202,4 +199,4 @@ private:
     void CleanupWeather();
 };
 
-} // namespace Voxel
+} // namespace Core

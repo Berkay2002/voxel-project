@@ -1,4 +1,4 @@
-#include "world/SkyRenderer.h"
+#include "core/SkyRenderer.h"
 #include "world/WorldConfig.h"
 #include "core/Camera.h"
 #include "core/Logger.h"
@@ -17,7 +17,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-namespace Voxel {
+namespace Core {
 
 // =============================================================================
 // SKY COLORS FOR DAY/NIGHT CYCLE
@@ -86,7 +86,7 @@ bool SkyRenderer::Setup() {
 
 void SkyRenderer::Update(float deltaTime, const glm::vec3& cameraPos) {
     // Update time of day (Minecraft: 20 min = full day)
-    float dayProgress = deltaTime / Config::DAY_DURATION;
+    float dayProgress = deltaTime / Voxel::Config::DAY_DURATION;
     m_TimeOfDay += dayProgress;
     
     // Wrap to next day
@@ -96,7 +96,7 @@ void SkyRenderer::Update(float deltaTime, const glm::vec3& cameraPos) {
     }
     
     // Update cloud drift (eastward = +X = +U in UV space)
-    m_CloudOffset += Config::CLOUD_SPEED * deltaTime;
+    m_CloudOffset += Voxel::Config::CLOUD_SPEED * deltaTime;
     if (m_CloudOffset > 100.0f) {
         m_CloudOffset -= 100.0f;  // Prevent float precision issues
     }
@@ -109,7 +109,7 @@ void SkyRenderer::Update(float deltaTime, const glm::vec3& cameraPos) {
 // RENDER
 // =============================================================================
 
-void SkyRenderer::Render(const Core::Camera& camera, float aspectRatio) {
+void SkyRenderer::Render(const Camera& camera, float aspectRatio) {
     // Get view-projection matrix
     glm::mat4 view = camera.GetViewMatrix();
     glm::mat4 proj = camera.GetProjectionMatrix(aspectRatio);
@@ -123,15 +123,15 @@ void SkyRenderer::Render(const Core::Camera& camera, float aspectRatio) {
     
     // Render clouds based on CloudMode setting
     if (m_CloudsEnabled) {
-        switch (Config::CLOUD_MODE) {
-            case Config::CloudMode::OFF:
+        switch (Voxel::Config::CLOUD_MODE) {
+            case Voxel::Config::CloudMode::OFF:
                 // Clouds disabled
                 break;
-            case Config::CloudMode::FAST:
+            case Voxel::Config::CloudMode::FAST:
                 // 2D flat cloud plane
                 RenderClouds(camera, aspectRatio);
                 break;
-            case Config::CloudMode::FANCY:
+            case Voxel::Config::CloudMode::FANCY:
                 // 3D volumetric cloud voxels
                 RenderVolumetricClouds(camera, aspectRatio);
                 break;
@@ -139,26 +139,26 @@ void SkyRenderer::Render(const Core::Camera& camera, float aspectRatio) {
     }
 }
 
-void SkyRenderer::RenderWeather(const Core::Camera& camera, float aspectRatio) {
+void SkyRenderer::RenderWeather(const Camera& camera, float aspectRatio) {
     if (!m_WeatherEnabled || !m_WeatherShader || !m_WeatherShader->IsValid()) {
         return;
     }
     
     // Select texture based on weather type
-    Core::Texture* texture = nullptr;
-    float fallSpeed = Config::RAIN_SPEED;
+    Texture* texture = nullptr;
+    float fallSpeed = Voxel::Config::RAIN_SPEED;
     float particleHeight = 1.0f;
-    float particleWidth = Config::RAIN_PARTICLE_SIZE;
+    float particleWidth = Voxel::Config::RAIN_PARTICLE_SIZE;
     
     switch (m_WeatherType) {
         case WeatherType::Rain:
             texture = m_RainTexture.get();
-            fallSpeed = Config::RAIN_SPEED;
+            fallSpeed = Voxel::Config::RAIN_SPEED;
             particleHeight = 1.5f;  // Long streaks
             break;
         case WeatherType::Snow:
             texture = m_SnowTexture.get();
-            fallSpeed = Config::SNOW_SPEED;
+            fallSpeed = Voxel::Config::SNOW_SPEED;
             particleHeight = 0.5f;  // Short flakes
             particleWidth = 0.2f;
             break;
@@ -305,7 +305,7 @@ float SkyRenderer::GetAmbientStrength() const {
 
 bool SkyRenderer::SetupClouds() {
     // Load cloud shader
-    m_CloudShader = std::make_unique<Core::Shader>(
+    m_CloudShader = std::make_unique<Shader>(
         "assets/shaders/cloud.vert",
         "assets/shaders/cloud.frag"
     );
@@ -316,7 +316,7 @@ bool SkyRenderer::SetupClouds() {
     }
     
     // Load cloud texture
-    m_CloudTexture = std::make_unique<Core::Texture>(
+    m_CloudTexture = std::make_unique<Texture>(
         "assets/textures/environment/clouds.png"
     );
     
@@ -327,11 +327,11 @@ bool SkyRenderer::SetupClouds() {
     
     // Create cloud plane mesh (large quad centered at origin, at cloud height)
     // Grid of tiles for better UV precision
-    const float cloudSize = Config::CLOUD_SIZE;
-    const float cloudHeight = Config::CLOUD_HEIGHT;
+    const float cloudSize = Voxel::Config::CLOUD_SIZE;
+    const float cloudHeight = Voxel::Config::CLOUD_HEIGHT;
     const int gridSize = 8;  // 8x8 grid of quads
     const float tileSize = cloudSize / gridSize;
-    const float uvScale = Config::CLOUD_SCALE;
+    const float uvScale = Voxel::Config::CLOUD_SCALE;
     
     std::vector<float> vertices;
     std::vector<unsigned int> indices;
@@ -397,7 +397,7 @@ bool SkyRenderer::SetupClouds() {
     return true;
 }
 
-void SkyRenderer::RenderClouds(const Core::Camera& camera, float aspectRatio) {
+void SkyRenderer::RenderClouds(const Camera& camera, float aspectRatio) {
     if (!m_CloudShader || !m_CloudShader->IsValid() || !m_CloudTexture || !m_CloudTexture->IsValid()) {
         return;
     }
@@ -461,7 +461,7 @@ void SkyRenderer::CleanupClouds() {
 
 bool SkyRenderer::SetupVolumetricClouds() {
     // Load volumetric cloud shader
-    m_VolumetricCloudShader = std::make_unique<Core::Shader>(
+    m_VolumetricCloudShader = std::make_unique<Shader>(
         "assets/shaders/volumetric_cloud.vert",
         "assets/shaders/volumetric_cloud.frag"
     );
@@ -472,9 +472,9 @@ bool SkyRenderer::SetupVolumetricClouds() {
     }
     
     // Initialize FastNoiseLite for organic cloud shapes
-    m_CloudNoise = std::make_unique<FastNoiseLite>(Config::TERRAIN_SEED + 999);
+    m_CloudNoise = std::make_unique<FastNoiseLite>(Voxel::Config::TERRAIN_SEED + 999);
     m_CloudNoise->SetNoiseType(FastNoiseLite::NoiseType_Perlin);
-    m_CloudNoise->SetFrequency(Config::CLOUD_NOISE_SCALE);
+    m_CloudNoise->SetFrequency(Voxel::Config::CLOUD_NOISE_SCALE);
     // Use FBm (Fractal Brownian Motion) for multi-octave detail
     m_CloudNoise->SetFractalType(FastNoiseLite::FractalType_FBm);
     m_CloudNoise->SetFractalOctaves(3);        // 3 layers of detail
@@ -505,18 +505,18 @@ bool SkyRenderer::IsCloudOccupied(int gridX, int gridZ) const {
     // Normalize to [0, 1] range for threshold comparison
     float normalized = (noiseValue + 1.0f) * 0.5f;
     
-    return normalized > Config::CLOUD_THRESHOLD;
+    return normalized > Voxel::Config::CLOUD_THRESHOLD;
 }
 
 void SkyRenderer::RebuildCloudMesh(int centerX, int centerZ) {
     // Vertex structure: pos(3) + normal(3) + lightLevel(1)
     std::vector<float> vertices;
-    vertices.reserve(Config::CLOUD_GRID_RADIUS * Config::CLOUD_GRID_RADIUS * 36 * 7);  // Rough estimate
+    vertices.reserve(Voxel::Config::CLOUD_GRID_RADIUS * Voxel::Config::CLOUD_GRID_RADIUS * 36 * 7);  // Rough estimate
     
-    const float blockSize = Config::CLOUD_BLOCK_SIZE;
-    const float cloudY = Config::CLOUD_HEIGHT;
-    const float cloudHeight = Config::CLOUD_BLOCK_HEIGHT;
-    const int radius = Config::CLOUD_GRID_RADIUS;
+    const float blockSize = Voxel::Config::CLOUD_BLOCK_SIZE;
+    const float cloudY = Voxel::Config::CLOUD_HEIGHT;
+    const float cloudHeight = Voxel::Config::CLOUD_BLOCK_HEIGHT;
+    const int radius = Voxel::Config::CLOUD_GRID_RADIUS;
     
     // Helper to add a face with pre-baked lighting
     auto addFace = [&](float x, float y, float z, float size, float height,
@@ -595,12 +595,12 @@ void SkyRenderer::RebuildCloudMesh(int centerX, int centerZ) {
             bool hasLeft = !IsCloudOccupied(worldGX - 1, worldGZ);
             
             // Add visible faces with two-tone lighting
-            if (hasTop)    addFace(x, cloudY, z, blockSize, cloudHeight, 0, 1, 0, Config::CLOUD_LIGHT_TOP);
-            if (hasBottom) addFace(x, cloudY, z, blockSize, cloudHeight, 0, -1, 0, Config::CLOUD_LIGHT_BOTTOM);
-            if (hasFront)  addFace(x, cloudY, z, blockSize, cloudHeight, 0, 0, 1, Config::CLOUD_LIGHT_SIDE);
-            if (hasBack)   addFace(x, cloudY, z, blockSize, cloudHeight, 0, 0, -1, Config::CLOUD_LIGHT_SIDE);
-            if (hasRight)  addFace(x, cloudY, z, blockSize, cloudHeight, 1, 0, 0, Config::CLOUD_LIGHT_SIDE);
-            if (hasLeft)   addFace(x, cloudY, z, blockSize, cloudHeight, -1, 0, 0, Config::CLOUD_LIGHT_SIDE);
+            if (hasTop)    addFace(x, cloudY, z, blockSize, cloudHeight, 0, 1, 0, Voxel::Config::CLOUD_LIGHT_TOP);
+            if (hasBottom) addFace(x, cloudY, z, blockSize, cloudHeight, 0, -1, 0, Voxel::Config::CLOUD_LIGHT_BOTTOM);
+            if (hasFront)  addFace(x, cloudY, z, blockSize, cloudHeight, 0, 0, 1, Voxel::Config::CLOUD_LIGHT_SIDE);
+            if (hasBack)   addFace(x, cloudY, z, blockSize, cloudHeight, 0, 0, -1, Voxel::Config::CLOUD_LIGHT_SIDE);
+            if (hasRight)  addFace(x, cloudY, z, blockSize, cloudHeight, 1, 0, 0, Voxel::Config::CLOUD_LIGHT_SIDE);
+            if (hasLeft)   addFace(x, cloudY, z, blockSize, cloudHeight, -1, 0, 0, Voxel::Config::CLOUD_LIGHT_SIDE);
         }
     }
     
@@ -627,7 +627,7 @@ void SkyRenderer::RebuildCloudMesh(int centerX, int centerZ) {
     glBindVertexArray(0);
 }
 
-void SkyRenderer::RenderVolumetricClouds(const Core::Camera& camera, float aspectRatio) {
+void SkyRenderer::RenderVolumetricClouds(const Camera& camera, float aspectRatio) {
     if (!m_VolumetricCloudShader || !m_VolumetricCloudShader->IsValid()) {
         return;
     }
@@ -635,8 +635,8 @@ void SkyRenderer::RenderVolumetricClouds(const Core::Camera& camera, float aspec
     glm::vec3 camPos = camera.GetPosition();
     
     // Check if camera moved to a new grid cell - rebuild mesh if needed
-    int newCenterX = static_cast<int>(std::floor(camPos.x / Config::CLOUD_BLOCK_SIZE));
-    int newCenterZ = static_cast<int>(std::floor(camPos.z / Config::CLOUD_BLOCK_SIZE));
+    int newCenterX = static_cast<int>(std::floor(camPos.x / Voxel::Config::CLOUD_BLOCK_SIZE));
+    int newCenterZ = static_cast<int>(std::floor(camPos.z / Voxel::Config::CLOUD_BLOCK_SIZE));
     
     if (newCenterX != m_LastCloudGridCenter.x || newCenterZ != m_LastCloudGridCenter.y) {
         RebuildCloudMesh(newCenterX, newCenterZ);
@@ -667,7 +667,7 @@ void SkyRenderer::RenderVolumetricClouds(const Core::Camera& camera, float aspec
     m_VolumetricCloudShader->SetVec3("u_SunDirection", GetSunDirection());
     m_VolumetricCloudShader->SetFloat("u_Brightness", brightness);
     m_VolumetricCloudShader->SetFloat("u_FogStart", 80.0f);
-    m_VolumetricCloudShader->SetFloat("u_FogEnd", Config::CLOUD_GRID_RADIUS * Config::CLOUD_BLOCK_SIZE * 0.9f);
+    m_VolumetricCloudShader->SetFloat("u_FogEnd", Voxel::Config::CLOUD_GRID_RADIUS * Voxel::Config::CLOUD_BLOCK_SIZE * 0.9f);
     
     // Disable backface culling so clouds visible from inside
     glDisable(GL_CULL_FACE);
@@ -698,7 +698,7 @@ void SkyRenderer::CleanupVolumetricClouds() {
 
 bool SkyRenderer::SetupCelestials() {
     // Load celestial shader
-    m_CelestialShader = std::make_unique<Core::Shader>(
+    m_CelestialShader = std::make_unique<Shader>(
         "assets/shaders/celestial.vert",
         "assets/shaders/celestial.frag"
     );
@@ -709,7 +709,7 @@ bool SkyRenderer::SetupCelestials() {
     }
     
     // Load sun texture
-    m_SunTexture = std::make_unique<Core::Texture>(
+    m_SunTexture = std::make_unique<Texture>(
         "assets/textures/environment/sun.png"
     );
     
@@ -719,7 +719,7 @@ bool SkyRenderer::SetupCelestials() {
     }
     
     // Load moon texture
-    m_MoonTexture = std::make_unique<Core::Texture>(
+    m_MoonTexture = std::make_unique<Texture>(
         "assets/textures/environment/moon_phases.png"
     );
     
@@ -762,7 +762,7 @@ bool SkyRenderer::SetupCelestials() {
     return true;
 }
 
-void SkyRenderer::RenderCelestials(const Core::Camera& camera, float aspectRatio) {
+void SkyRenderer::RenderCelestials(const Camera& camera, float aspectRatio) {
     if (!m_CelestialShader || !m_CelestialShader->IsValid()) {
         return;
     }
@@ -780,8 +780,8 @@ void SkyRenderer::RenderCelestials(const Core::Camera& camera, float aspectRatio
     // Calculate sun/moon positions
     float sunAngle = (m_TimeOfDay - 0.25f) * 2.0f * static_cast<float>(M_PI);
     glm::vec3 sunDir = glm::vec3(std::cos(sunAngle), std::sin(sunAngle), 0.0f);
-    glm::vec3 sunPos = cameraPos + sunDir * Config::SKY_RADIUS;
-    glm::vec3 moonPos = cameraPos - sunDir * Config::SKY_RADIUS;  // Opposite sun
+    glm::vec3 sunPos = cameraPos + sunDir * Voxel::Config::SKY_RADIUS;
+    glm::vec3 moonPos = cameraPos - sunDir * Voxel::Config::SKY_RADIUS;  // Opposite sun
     
     m_CelestialShader->Bind();
     m_CelestialShader->SetMat4("u_ViewProj", viewProj);
@@ -793,7 +793,7 @@ void SkyRenderer::RenderCelestials(const Core::Camera& camera, float aspectRatio
     // Render sun (only if above horizon: Y > 0 relative to camera)
     if (sunDir.y > -0.2f && m_SunTexture && m_SunTexture->IsValid()) {
         m_CelestialShader->SetVec3("u_WorldPos", sunPos);
-        m_CelestialShader->SetFloat("u_Size", Config::SUN_SIZE);
+        m_CelestialShader->SetFloat("u_Size", Voxel::Config::SUN_SIZE);
         m_CelestialShader->SetVec2("u_UVOffset", glm::vec2(0.0f, 0.0f));
         m_CelestialShader->SetVec2("u_UVScale", glm::vec2(1.0f, 1.0f));
         
@@ -813,7 +813,7 @@ void SkyRenderer::RenderCelestials(const Core::Camera& camera, float aspectRatio
         float vOffset = (phase / 4) * 0.5f;
         
         m_CelestialShader->SetVec3("u_WorldPos", moonPos);
-        m_CelestialShader->SetFloat("u_Size", Config::MOON_SIZE);
+        m_CelestialShader->SetFloat("u_Size", Voxel::Config::MOON_SIZE);
         m_CelestialShader->SetVec2("u_UVOffset", glm::vec2(uOffset, vOffset));
         m_CelestialShader->SetVec2("u_UVScale", glm::vec2(0.25f, 0.5f));
         
@@ -845,7 +845,7 @@ void SkyRenderer::CleanupCelestials() {
 
 bool SkyRenderer::SetupWeather() {
     // Load weather shader
-    m_WeatherShader = std::make_unique<Core::Shader>(
+    m_WeatherShader = std::make_unique<Shader>(
         "assets/shaders/weather.vert",
         "assets/shaders/weather.frag"
     );
@@ -856,7 +856,7 @@ bool SkyRenderer::SetupWeather() {
     }
     
     // Load rain texture
-    m_RainTexture = std::make_unique<Core::Texture>(
+    m_RainTexture = std::make_unique<Texture>(
         "assets/textures/environment/rain.png"
     );
     
@@ -865,7 +865,7 @@ bool SkyRenderer::SetupWeather() {
     }
     
     // Load snow texture
-    m_SnowTexture = std::make_unique<Core::Texture>(
+    m_SnowTexture = std::make_unique<Texture>(
         "assets/textures/environment/snow.png"
     );
     
@@ -880,7 +880,7 @@ bool SkyRenderer::SetupWeather() {
     std::uniform_real_distribution<float> distHeight(0.0f, 128.0f);  // 128 blocks tall
     std::uniform_real_distribution<float> distOffset(0.0f, 128.0f);  // Random fall offset
     
-    m_WeatherParticleCount = Config::RAIN_DENSITY;
+    m_WeatherParticleCount = Voxel::Config::RAIN_DENSITY;
     
     std::vector<float> vertices;
     vertices.reserve(m_WeatherParticleCount * 6 * 6);  // 6 vertices * 6 floats each
@@ -947,4 +947,4 @@ void SkyRenderer::CleanupWeather() {
     }
 }
 
-} // namespace Voxel
+} // namespace Core

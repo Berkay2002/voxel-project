@@ -18,7 +18,7 @@
 // Voxel system
 #include "world/BlockRegistry.h"
 #include "world/ChunkManager.h"
-#include "world/SkyRenderer.h"
+#include "core/SkyRenderer.h"
 #include "world/SpaghettiCaveCarver.h"
 
 #include <glad/gl.h>
@@ -275,7 +275,7 @@ void Engine::SetupWorld() {
   m_ChunkManager = std::make_unique<Voxel::ChunkManager>();
 
   // Create and setup sky renderer
-  m_SkyRenderer = std::make_unique<Voxel::SkyRenderer>();
+  m_SkyRenderer = std::make_unique<SkyRenderer>();
   if (!m_SkyRenderer->Setup()) {
     LOG_ERROR("Failed to setup SkyRenderer");
     // Non-fatal: continue without sky

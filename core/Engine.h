@@ -15,12 +15,12 @@ class Camera;
 class BlockOutline;
 class ShadowMap;
 class SSAO;
+class SkyRenderer;
 
 } // namespace Core
 
 namespace Voxel {
 class ChunkManager;
-class SkyRenderer;
 } // namespace Voxel
 
 namespace UI {
@@ -96,7 +96,7 @@ private:
 
   // World system
   std::unique_ptr<Voxel::ChunkManager> m_ChunkManager;
-  std::unique_ptr<Voxel::SkyRenderer> m_SkyRenderer;
+  std::unique_ptr<SkyRenderer> m_SkyRenderer;
 
   // Block interaction (raycasting)
   Voxel::RaycastResult m_TargetedBlock; // Currently targeted block

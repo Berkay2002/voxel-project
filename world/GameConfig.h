@@ -43,8 +43,7 @@ private:
   GameConfig() = default;
 };
 
-// Backwards compatibility alias (deprecated - use GameConfig directly)
-using RuntimeConfig = GameConfig;
+
 
 } // namespace Config
 } // namespace Voxel
