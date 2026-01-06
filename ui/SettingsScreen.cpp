@@ -1,10 +1,11 @@
 #include "ui/SettingsScreen.h"
 #include "core/DisplayConfig.h"
 #include "core/Logger.h"
+#include "core/RenderConfig.h"
 #include "core/Texture.h"
 #include "core/Window.h"
 #include "ui/UIRenderer.h"
-#include "world/RuntimeConfig.h"
+#include "world/GameConfig.h"
 
 namespace UI {
 
@@ -47,7 +48,8 @@ void SettingsScreen::LoadTextures() {
 }
 
 void SettingsScreen::SyncFromConfig() {
-  auto &config = Voxel::Config::RuntimeConfig::Instance();
+  auto &renderConfig = Core::RenderConfig::Instance();
+  auto &gameConfig = Voxel::Config::GameConfig::Instance();
   auto &displayConfig = Core::DisplayConfig::Instance();
 
   // Window mode (0=Windowed, 1=Borderless, 2=Fullscreen)
@@ -58,47 +60,48 @@ void SettingsScreen::SyncFromConfig() {
   m_WindowMode.step = 1.0f;
 
   m_RenderDistance.label = "Render Distance";
-  m_RenderDistance.value = static_cast<float>(config.renderDistance);
+  m_RenderDistance.value = static_cast<float>(renderConfig.renderDistance);
   m_RenderDistance.minVal = 4.0f;
   m_RenderDistance.maxVal = 32.0f;
   m_RenderDistance.step = 2.0f;
 
   m_Shadows.label = "Shadows";
-  m_Shadows.value = config.shadowsEnabled ? 1.0f : 0.0f;
+  m_Shadows.value = renderConfig.shadowsEnabled ? 1.0f : 0.0f;
   m_Shadows.minVal = 0.0f;
   m_Shadows.maxVal = 1.0f;
   m_Shadows.step = 1.0f;
 
   m_SSAO.label = "SSAO";
-  m_SSAO.value = config.ssaoEnabled ? 1.0f : 0.0f;
+  m_SSAO.value = renderConfig.ssaoEnabled ? 1.0f : 0.0f;
   m_SSAO.minVal = 0.0f;
   m_SSAO.maxVal = 1.0f;
   m_SSAO.step = 1.0f;
 
   m_Clouds.label = "Clouds";
-  m_Clouds.value = static_cast<float>(config.cloudMode);
+  m_Clouds.value = static_cast<float>(renderConfig.cloudMode);
   m_Clouds.minVal = 0.0f;
   m_Clouds.maxVal = 2.0f;
   m_Clouds.step = 1.0f;
 
   m_DayCycleSpeed.label = "Day Cycle";
   // Convert duration to speed multiplier (1200 = 1x, 600 = 2x, 2400 = 0.5x)
-  m_DayCycleSpeed.value = 1200.0f / config.dayDuration;
+  m_DayCycleSpeed.value = 1200.0f / gameConfig.dayDuration;
   m_DayCycleSpeed.minVal = 0.25f; // 4x slower
   m_DayCycleSpeed.maxVal = 4.0f;  // 4x faster
   m_DayCycleSpeed.step = 0.25f;
 }
 
 void SettingsScreen::SyncToConfig() {
-  auto &config = Voxel::Config::RuntimeConfig::Instance();
+  auto &renderConfig = Core::RenderConfig::Instance();
+  auto &gameConfig = Voxel::Config::GameConfig::Instance();
 
-  config.renderDistance = static_cast<int>(m_RenderDistance.value);
-  config.shadowsEnabled = m_Shadows.value > 0.5f;
-  config.ssaoEnabled = m_SSAO.value > 0.5f;
-  config.cloudMode = static_cast<int>(m_Clouds.value);
-  config.dayDuration = 1200.0f / m_DayCycleSpeed.value;
+  renderConfig.renderDistance = static_cast<int>(m_RenderDistance.value);
+  renderConfig.shadowsEnabled = m_Shadows.value > 0.5f;
+  renderConfig.ssaoEnabled = m_SSAO.value > 0.5f;
+  renderConfig.cloudMode = static_cast<int>(m_Clouds.value);
+  gameConfig.dayDuration = 1200.0f / m_DayCycleSpeed.value;
 
-  config.Apply();
+  renderConfig.Apply();
 }
 
 void SettingsScreen::UpdateLayout(int screenWidth, int screenHeight) {

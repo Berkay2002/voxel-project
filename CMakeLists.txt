@@ -106,6 +106,7 @@ add_executable(${PROJECT_NAME}
     core/SSAO.cpp
     core/TextureRegistry.cpp
     core/DisplayConfig.cpp
+    core/RenderConfig.cpp
     world/Chunk.cpp
     world/ChunkMeshBuilder.cpp
     world/TerrainGenerator.cpp
@@ -115,6 +116,7 @@ add_executable(${PROJECT_NAME}
     world/VoxelRaycast.cpp
     world/SkyRenderer.cpp
     world/RuntimeConfig.cpp
+    world/GameConfig.cpp
     ui/UIRenderer.cpp
     ui/TitleScreen.cpp
     ui/LoadingScreen.cpp
