@@ -18,7 +18,10 @@ The engine features a modular core decoupled from game logic, a centralized conf
 
 ### Key Features
 
-- **Modern C++20 Architecture**: Modular design separating `core` engine components from `world` logic.
+- **Modern C++20 Architecture**: Modular design with organized subdirectories:
+  - `core/` - Engine subsystems (graphics, rendering, scene, atmosphere, settings)
+  - `world/` - Game logic and voxel systems
+  - `ui/` - User interface components
 - **High-Performance Rendering**:
   - OpenGL 4.6 Core Profile.
   - Aggressive Face Culling (internal faces are never rendered).
@@ -30,11 +33,14 @@ The engine features a modular core decoupled from game logic, a centralized conf
   - Cave Systems: Spaghetti caves with natural entrances and water flooding.
   - Destructible Terrain: Raycast-based block breaking and placing.
 - **Visuals**:
-  - Dynamic Day/Night Cycle with celestial bodies.
+  - Dynamic Day/Night Cycle with celestial bodies (Sun/Moon with lunar phases).
   - Directional Lighting with Per-Vertex Ambient Occlusion (AO).
+  - Screen-Space Ambient Occlusion (SSAO) for enhanced depth.
+  - Shadow Mapping with stabilized cascades.
   - Transparent Water rendering with proper blending.
-  - Volumetric Clouds and Distance Fog.
-  - Weather System (Rain/Snow).
+  - Volumetric Clouds (Fast 2D / Fancy 3D modes).
+  - Distance Fog for atmospheric depth.
+  - Weather System (Rain/Snow particles).
 
 ## Demo
 
@@ -91,18 +97,21 @@ cmake --build build -j$(nproc)
 ### Running
 
 ```bash
-./build/VoxelProject
+./build/VoxelEngine
 ```
 
 ## Controls
 
 - **WASD**: Move Camera
 - **Mouse**: Look Around
+- **M**: Toggle Mouse Capture
 - **Left Click**: Break Block
 - **Right Click**: Place Block
 - **Shift**: Sprint / Fly Down
 - **Space**: Jump / Fly Up
 - **K**: Toggle Weather (Rain/Snow)
+- **O**: Toggle SSAO
+- **H/J**: Rewind/Fast-forward Time
 - **Esc**: Close Application
 
 ## License
