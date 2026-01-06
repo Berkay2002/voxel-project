@@ -15,7 +15,7 @@ class Camera;
 class SelectionRenderer;
 class ShadowMap;
 class SSAO;
-class SkyRenderer;
+class SkySystem;
 
 } // namespace Core
 
@@ -32,16 +32,16 @@ class SettingsScreen;
 
 namespace Core {
 
-class Engine {
+class Application {
 public:
-  Engine();
-  ~Engine();
+  Application();
+  ~Application();
 
   // Non-copyable, non-movable
-  Engine(const Engine &) = delete;
-  Engine &operator=(const Engine &) = delete;
-  Engine(Engine &&) = delete;
-  Engine &operator=(Engine &&) = delete;
+  Application(const Application &) = delete;
+  Application &operator=(const Application &) = delete;
+  Application(Application &&) = delete;
+  Application &operator=(Application &&) = delete;
 
   void Run();
 
@@ -96,7 +96,7 @@ private:
 
   // World system
   std::unique_ptr<Voxel::ChunkManager> m_ChunkManager;
-  std::unique_ptr<SkyRenderer> m_SkyRenderer;
+  std::unique_ptr<SkySystem> m_SkySystem;
 
   // Block interaction (raycasting)
   Voxel::RaycastResult m_TargetedBlock; // Currently targeted block

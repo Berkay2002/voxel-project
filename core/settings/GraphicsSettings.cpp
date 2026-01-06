@@ -2,18 +2,18 @@
 
 namespace Core {
 
-RenderConfig &RenderConfig::Instance() {
-  static RenderConfig instance;
+GraphicsSettings &GraphicsSettings::Instance() {
+  static GraphicsSettings instance;
   return instance;
 }
 
-void RenderConfig::Apply() {
+void GraphicsSettings::Apply() {
   // Update fog distances based on render distance
   fogStart = GetFogEndForRenderDistance() * 0.75f;
   fogEnd = GetFogEndForRenderDistance();
 }
 
-void RenderConfig::ResetToDefaults() {
+void GraphicsSettings::ResetToDefaults() {
   renderDistance = 20;
   fogStart = 250.0f;
   fogEnd = 320.0f;

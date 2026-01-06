@@ -10,23 +10,23 @@ class Texture;
 class Camera;
 
 /**
- * SkyRenderer - Modular sky system for clouds, celestials, and weather.
+ * SkySystem - Modular sky system for clouds, celestials, and weather.
  * 
  * Design Principles:
  * - MODULARITY: Each subsystem (clouds, sun/moon, weather) can be independently enabled/disabled
  * - SCALABILITY: Weather uses instanced rendering for many particles
  * - CONFIGURABILITY: All parameters come from WorldConfig.h
  */
-class SkyRenderer {
+class SkySystem {
 public:
-    SkyRenderer();
-    ~SkyRenderer();
+    SkySystem();
+    ~SkySystem();
 
     // Disable copy, allow move
-    SkyRenderer(const SkyRenderer&) = delete;
-    SkyRenderer& operator=(const SkyRenderer&) = delete;
-    SkyRenderer(SkyRenderer&&) noexcept = default;
-    SkyRenderer& operator=(SkyRenderer&&) noexcept = default;
+    SkySystem(const SkySystem&) = delete;
+    SkySystem& operator=(const SkySystem&) = delete;
+    SkySystem(SkySystem&&) noexcept = default;
+    SkySystem& operator=(SkySystem&&) noexcept = default;
 
     /**
      * Initialize all sky subsystems (load shaders, create meshes, load textures)

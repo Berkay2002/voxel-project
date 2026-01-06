@@ -91,7 +91,7 @@ FetchContent_MakeAvailable(json)
 # ============================================================================
 add_executable(${PROJECT_NAME}
     main.cpp
-    core/Engine.cpp
+    core/Application.cpp
     core/graphics/Shader.cpp
     core/graphics/VertexBuffer.cpp
     core/graphics/IndexBuffer.cpp

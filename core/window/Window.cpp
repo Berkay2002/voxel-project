@@ -43,7 +43,7 @@ Window::Window(int width, int height, const std::string &title)
   glfwSwapInterval(1);
 
   // Store initial windowed position
-  DisplayConfig &config = DisplayConfig::Instance();
+  VideoSettings &config = VideoSettings::Instance();
   config.windowedWidth = width;
   config.windowedHeight = height;
   glfwGetWindowPos(m_Window, &config.windowPosX, &config.windowPosY);
@@ -92,7 +92,7 @@ void Window::GetMonitorSize(int &width, int &height) const {
 
 void Window::SetVSync(bool enabled) {
   glfwSwapInterval(enabled ? 1 : 0);
-  DisplayConfig::Instance().vsyncEnabled = enabled;
+  VideoSettings::Instance().vsyncEnabled = enabled;
   LOG_INFO(std::string("VSync ") + (enabled ? "enabled" : "disabled"));
 }
 
@@ -101,7 +101,7 @@ void Window::SetWindowMode(WindowMode mode) {
     return; // No change needed
   }
 
-  DisplayConfig &config = DisplayConfig::Instance();
+  VideoSettings &config = VideoSettings::Instance();
   GLFWmonitor *monitor = GetPrimaryMonitor();
   const GLFWvidmode *vidmode = glfwGetVideoMode(monitor);
 

@@ -1,10 +1,10 @@
 #pragma once
 
 /**
- * Display Configuration
+ * VideoSettings
  *
  * Singleton class for display/window settings that can be modified at runtime.
- * Separated from RuntimeConfig (world/) as display belongs to core engine layer.
+ * Separated from GameConfig (world/) as display belongs to core engine layer.
  */
 
 namespace Core {
@@ -16,14 +16,14 @@ enum class WindowMode {
   FULLSCREEN = 2
 };
 
-class DisplayConfig {
+class VideoSettings {
 public:
   /// Get the singleton instance
-  static DisplayConfig &Instance();
+  static VideoSettings &Instance();
 
   // Non-copyable
-  DisplayConfig(const DisplayConfig &) = delete;
-  DisplayConfig &operator=(const DisplayConfig &) = delete;
+  VideoSettings(const VideoSettings &) = delete;
+  VideoSettings &operator=(const VideoSettings &) = delete;
 
   // =========================================================================
   // WINDOW SETTINGS
@@ -62,7 +62,7 @@ public:
   }
 
 private:
-  DisplayConfig() = default;
+  VideoSettings() = default;
 };
 
 } // namespace Core

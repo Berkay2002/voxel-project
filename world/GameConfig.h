@@ -4,7 +4,7 @@
  * Game Configuration
  *
  * Singleton class for game/world-specific settings that can be modified at runtime.
- * Rendering settings are in core/RenderConfig.h for proper layer separation.
+ * Rendering settings are in core/GraphicsSettings.h for proper layer separation.
  */
 
 namespace Voxel {

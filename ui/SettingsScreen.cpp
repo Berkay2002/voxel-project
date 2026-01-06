@@ -48,9 +48,9 @@ void SettingsScreen::LoadTextures() {
 }
 
 void SettingsScreen::SyncFromConfig() {
-  auto &renderConfig = Core::RenderConfig::Instance();
+  auto &renderConfig = Core::GraphicsSettings::Instance();
   auto &gameConfig = Voxel::Config::GameConfig::Instance();
-  auto &displayConfig = Core::DisplayConfig::Instance();
+  auto &displayConfig = Core::VideoSettings::Instance();
 
   // Window mode (0=Windowed, 1=Borderless, 2=Fullscreen)
   m_WindowMode.label = "Window Mode";
@@ -92,7 +92,7 @@ void SettingsScreen::SyncFromConfig() {
 }
 
 void SettingsScreen::SyncToConfig() {
-  auto &renderConfig = Core::RenderConfig::Instance();
+  auto &renderConfig = Core::GraphicsSettings::Instance();
   auto &gameConfig = Voxel::Config::GameConfig::Instance();
 
   renderConfig.renderDistance = static_cast<int>(m_RenderDistance.value);

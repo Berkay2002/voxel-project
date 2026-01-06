@@ -35,9 +35,9 @@ namespace SkyColors {
 // CONSTRUCTOR / DESTRUCTOR
 // =============================================================================
 
-SkyRenderer::SkyRenderer() = default;
+SkySystem::SkySystem() = default;
 
-SkyRenderer::~SkyRenderer() {
+SkySystem::~SkySystem() {
     CleanupClouds();
     CleanupVolumetricClouds();
     CleanupCelestials();
@@ -48,8 +48,8 @@ SkyRenderer::~SkyRenderer() {
 // SETUP
 // =============================================================================
 
-bool SkyRenderer::Setup() {
-    LOG_INFO("Setting up SkyRenderer...");
+bool SkySystem::Setup() {
+    LOG_INFO("Setting up SkySystem...");
     
     bool success = true;
     
@@ -74,7 +74,7 @@ bool SkyRenderer::Setup() {
     }
     
     if (success) {
-        LOG_INFO("SkyRenderer setup complete");
+        LOG_INFO("SkySystem setup complete");
     }
     
     return success;
@@ -84,7 +84,7 @@ bool SkyRenderer::Setup() {
 // UPDATE
 // =============================================================================
 
-void SkyRenderer::Update(float deltaTime, const glm::vec3& cameraPos) {
+void SkySystem::Update(float deltaTime, const glm::vec3& cameraPos) {
     // Update time of day (Minecraft: 20 min = full day)
     float dayProgress = deltaTime / Voxel::Config::DAY_DURATION;
     m_TimeOfDay += dayProgress;
@@ -109,7 +109,7 @@ void SkyRenderer::Update(float deltaTime, const glm::vec3& cameraPos) {
 // RENDER
 // =============================================================================
 
-void SkyRenderer::Render(const Camera& camera, float aspectRatio) {
+void SkySystem::Render(const Camera& camera, float aspectRatio) {
     // Get view-projection matrix
     glm::mat4 view = camera.GetViewMatrix();
     glm::mat4 proj = camera.GetProjectionMatrix(aspectRatio);
@@ -139,7 +139,7 @@ void SkyRenderer::Render(const Camera& camera, float aspectRatio) {
     }
 }
 
-void SkyRenderer::RenderWeather(const Camera& camera, float aspectRatio) {
+void SkySystem::RenderWeather(const Camera& camera, float aspectRatio) {
     if (!m_WeatherEnabled || !m_WeatherShader || !m_WeatherShader->IsValid()) {
         return;
     }
@@ -200,7 +200,7 @@ void SkyRenderer::RenderWeather(const Camera& camera, float aspectRatio) {
 // TIME OF DAY / SKY COLOR
 // =============================================================================
 
-void SkyRenderer::SetTimeOfDay(float time) {
+void SkySystem::SetTimeOfDay(float time) {
     // Properly wrap time and update day count (for moon phases)
     while (time >= 1.0f) {
         time -= 1.0f;
@@ -213,7 +213,7 @@ void SkyRenderer::SetTimeOfDay(float time) {
     m_TimeOfDay = time;
 }
 
-glm::vec3 SkyRenderer::GetSkyColor() const {
+glm::vec3 SkySystem::GetSkyColor() const {
     float t = m_TimeOfDay;
     
     // Time periods:
@@ -251,7 +251,7 @@ glm::vec3 SkyRenderer::GetSkyColor() const {
     }
 }
 
-glm::vec3 SkyRenderer::GetSunDirection() const {
+glm::vec3 SkySystem::GetSunDirection() const {
     // Sun orbits in the XY plane
     // 0.0 = midnight (below horizon), 0.25 = dawn, 0.5 = noon (overhead), 0.75 = dusk
     float angle = (m_TimeOfDay - 0.25f) * 2.0f * static_cast<float>(M_PI);
@@ -280,7 +280,7 @@ glm::vec3 SkyRenderer::GetSunDirection() const {
     return sunDir;
 }
 
-float SkyRenderer::GetAmbientStrength() const {
+float SkySystem::GetAmbientStrength() const {
     float t = m_TimeOfDay;
     
     // Lower ambient at night
@@ -303,7 +303,7 @@ float SkyRenderer::GetAmbientStrength() const {
 // CLOUD LAYER IMPLEMENTATION
 // =============================================================================
 
-bool SkyRenderer::SetupClouds() {
+bool SkySystem::SetupClouds() {
     // Load cloud shader
     m_CloudShader = std::make_unique<Shader>(
         "assets/shaders/cloud.vert",
@@ -397,7 +397,7 @@ bool SkyRenderer::SetupClouds() {
     return true;
 }
 
-void SkyRenderer::RenderClouds(const Camera& camera, float aspectRatio) {
+void SkySystem::RenderClouds(const Camera& camera, float aspectRatio) {
     if (!m_CloudShader || !m_CloudShader->IsValid() || !m_CloudTexture || !m_CloudTexture->IsValid()) {
         return;
     }
@@ -440,7 +440,7 @@ void SkyRenderer::RenderClouds(const Camera& camera, float aspectRatio) {
     m_CloudShader->Unbind();
 }
 
-void SkyRenderer::CleanupClouds() {
+void SkySystem::CleanupClouds() {
     if (m_CloudVAO != 0) {
         glDeleteVertexArrays(1, &m_CloudVAO);
         m_CloudVAO = 0;
@@ -459,7 +459,7 @@ void SkyRenderer::CleanupClouds() {
 // VOLUMETRIC CLOUDS IMPLEMENTATION (Fancy 3D mode)
 // =============================================================================
 
-bool SkyRenderer::SetupVolumetricClouds() {
+bool SkySystem::SetupVolumetricClouds() {
     // Load volumetric cloud shader
     m_VolumetricCloudShader = std::make_unique<Shader>(
         "assets/shaders/volumetric_cloud.vert",
@@ -492,7 +492,7 @@ bool SkyRenderer::SetupVolumetricClouds() {
     return true;
 }
 
-bool SkyRenderer::IsCloudOccupied(int gridX, int gridZ) const {
+bool SkySystem::IsCloudOccupied(int gridX, int gridZ) const {
     if (!m_CloudNoise) return false;
     
     // Apply drift offset for animation (cloud movement)
@@ -508,7 +508,7 @@ bool SkyRenderer::IsCloudOccupied(int gridX, int gridZ) const {
     return normalized > Voxel::Config::CLOUD_THRESHOLD;
 }
 
-void SkyRenderer::RebuildCloudMesh(int centerX, int centerZ) {
+void SkySystem::RebuildCloudMesh(int centerX, int centerZ) {
     // Vertex structure: pos(3) + normal(3) + lightLevel(1)
     std::vector<float> vertices;
     vertices.reserve(Voxel::Config::CLOUD_GRID_RADIUS * Voxel::Config::CLOUD_GRID_RADIUS * 36 * 7);  // Rough estimate
@@ -627,7 +627,7 @@ void SkyRenderer::RebuildCloudMesh(int centerX, int centerZ) {
     glBindVertexArray(0);
 }
 
-void SkyRenderer::RenderVolumetricClouds(const Camera& camera, float aspectRatio) {
+void SkySystem::RenderVolumetricClouds(const Camera& camera, float aspectRatio) {
     if (!m_VolumetricCloudShader || !m_VolumetricCloudShader->IsValid()) {
         return;
     }
@@ -681,7 +681,7 @@ void SkyRenderer::RenderVolumetricClouds(const Camera& camera, float aspectRatio
     m_VolumetricCloudShader->Unbind();
 }
 
-void SkyRenderer::CleanupVolumetricClouds() {
+void SkySystem::CleanupVolumetricClouds() {
     if (m_VolumetricCloudVAO != 0) {
         glDeleteVertexArrays(1, &m_VolumetricCloudVAO);
         m_VolumetricCloudVAO = 0;
@@ -696,7 +696,7 @@ void SkyRenderer::CleanupVolumetricClouds() {
 // CELESTIALS IMPLEMENTATION (Sun/Moon)
 // =============================================================================
 
-bool SkyRenderer::SetupCelestials() {
+bool SkySystem::SetupCelestials() {
     // Load celestial shader
     m_CelestialShader = std::make_unique<Shader>(
         "assets/shaders/celestial.vert",
@@ -762,7 +762,7 @@ bool SkyRenderer::SetupCelestials() {
     return true;
 }
 
-void SkyRenderer::RenderCelestials(const Camera& camera, float aspectRatio) {
+void SkySystem::RenderCelestials(const Camera& camera, float aspectRatio) {
     if (!m_CelestialShader || !m_CelestialShader->IsValid()) {
         return;
     }
@@ -828,7 +828,7 @@ void SkyRenderer::RenderCelestials(const Camera& camera, float aspectRatio) {
     m_CelestialShader->Unbind();
 }
 
-void SkyRenderer::CleanupCelestials() {
+void SkySystem::CleanupCelestials() {
     if (m_BillboardVAO != 0) {
         glDeleteVertexArrays(1, &m_BillboardVAO);
         m_BillboardVAO = 0;
@@ -843,7 +843,7 @@ void SkyRenderer::CleanupCelestials() {
 // WEATHER SYSTEM IMPLEMENTATION
 // =============================================================================
 
-bool SkyRenderer::SetupWeather() {
+bool SkySystem::SetupWeather() {
     // Load weather shader
     m_WeatherShader = std::make_unique<Shader>(
         "assets/shaders/weather.vert",
@@ -932,11 +932,11 @@ bool SkyRenderer::SetupWeather() {
     return true;
 }
 
-void SkyRenderer::UpdateWeatherParticles([[maybe_unused]] const glm::vec3& cameraPos) {
+void SkySystem::UpdateWeatherParticles([[maybe_unused]] const glm::vec3& cameraPos) {
     // Particles are animated in the shader, no CPU-side update needed
 }
 
-void SkyRenderer::CleanupWeather() {
+void SkySystem::CleanupWeather() {
     if (m_WeatherVAO != 0) {
         glDeleteVertexArrays(1, &m_WeatherVAO);
         m_WeatherVAO = 0;

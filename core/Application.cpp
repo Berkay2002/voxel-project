@@ -1,4 +1,4 @@
-#include "core/Engine.h"
+#include "core/Application.h"
 #include "core/rendering/SelectionRenderer.h"
 #include "core/scene/Camera.h"
 #include "core/Logger.h"
@@ -33,10 +33,10 @@ namespace Core {
 
 // Static pointer for GLFW callback access (can't use glfwSetWindowUserPointer,
 // it's already used by Window class for resize callback)
-static Engine *s_Instance = nullptr;
+static Application *s_Instance = nullptr;
 
-Engine::Engine() {
-  LOG_INFO("Initializing Engine...");
+Application::Application() {
+  LOG_INFO("Initializing Application...");
 
   // Create window (1280x720 for better menu visibility)
   m_Window = std::make_unique<Window>(1280, 720, "VoxelCraft");
@@ -115,16 +115,16 @@ Engine::Engine() {
   // Show cursor for menu navigation
   glfwSetInputMode(m_Window->GetHandle(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
-  LOG_INFO("Engine initialized - showing title screen");
+  LOG_INFO("Application initialized - showing title screen");
 }
 
-Engine::~Engine() {
+Application::~Application() {
   CleanupCrosshair();
   s_Instance = nullptr; // Clear static pointer
-  LOG_INFO("Engine shutting down...");
+  LOG_INFO("Application shutting down...");
 }
 
-void Engine::SetupWorld() {
+void Application::SetupWorld() {
   // Create lit shader with lighting support (for opaque geometry)
   m_Shader = std::make_unique<Shader>("assets/shaders/lit.vert",
                                       "assets/shaders/lit.frag");
@@ -275,9 +275,9 @@ void Engine::SetupWorld() {
   m_ChunkManager = std::make_unique<Voxel::ChunkManager>();
 
   // Create and setup sky renderer
-  m_SkyRenderer = std::make_unique<SkyRenderer>();
-  if (!m_SkyRenderer->Setup()) {
-    LOG_ERROR("Failed to setup SkyRenderer");
+  m_SkySystem = std::make_unique<SkySystem>();
+  if (!m_SkySystem->Setup()) {
+    LOG_ERROR("Failed to setup SkySystem");
     // Non-fatal: continue without sky
   }
 
@@ -286,7 +286,7 @@ void Engine::SetupWorld() {
            std::to_string(texRegistry.GetTextureCount()) + " textures");
 }
 
-void Engine::ProcessInput(float deltaTime) {
+void Application::ProcessInput(float deltaTime) {
   GLFWwindow *window = m_Window->GetHandle();
 
   // Close window with ESC
@@ -318,9 +318,9 @@ void Engine::ProcessInput(float deltaTime) {
   if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS) {
     if (!kKeyWasPressed) {
       kKeyWasPressed = true;
-      if (m_SkyRenderer) {
-        m_SkyRenderer->ToggleWeather();
-        if (m_SkyRenderer->IsWeatherEnabled()) {
+      if (m_SkySystem) {
+        m_SkySystem->ToggleWeather();
+        if (m_SkySystem->IsWeatherEnabled()) {
           LOG_INFO("Weather enabled (K to toggle)");
         } else {
           LOG_INFO("Weather disabled (K to toggle)");
@@ -333,19 +333,19 @@ void Engine::ProcessInput(float deltaTime) {
 
   // Fast-forward time with J key (hold to advance quickly)
   if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS) {
-    if (m_SkyRenderer) {
+    if (m_SkySystem) {
       // Advance time by 5% per second while held (20 seconds = full day cycle)
-      float newTime = m_SkyRenderer->GetTimeOfDay() + deltaTime * 0.05f;
-      m_SkyRenderer->SetTimeOfDay(newTime);
+      float newTime = m_SkySystem->GetTimeOfDay() + deltaTime * 0.05f;
+      m_SkySystem->SetTimeOfDay(newTime);
     }
   }
 
   // Rewind time with H key (hold to go back quickly - towards night)
   if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
-    if (m_SkyRenderer) {
+    if (m_SkySystem) {
       // Rewind time by 5% per second while held
-      float newTime = m_SkyRenderer->GetTimeOfDay() - deltaTime * 0.05f;
-      m_SkyRenderer->SetTimeOfDay(newTime);
+      float newTime = m_SkySystem->GetTimeOfDay() - deltaTime * 0.05f;
+      m_SkySystem->SetTimeOfDay(newTime);
     }
   }
 
@@ -402,7 +402,7 @@ void Engine::ProcessInput(float deltaTime) {
   }
 }
 
-void Engine::Run() {
+void Application::Run() {
   LOG_INFO("Starting main loop...");
 
   float lastFrame = 0.0f;
@@ -443,7 +443,7 @@ void Engine::Run() {
   LOG_INFO("Main loop ended");
 }
 
-void Engine::Update(float deltaTime) {
+void Application::Update(float deltaTime) {
   // Note: glfwPollEvents called in Run() before state switch
   ProcessInput(deltaTime);
 
@@ -451,8 +451,8 @@ void Engine::Update(float deltaTime) {
   UpdateTargetedBlock();
 
   // Update sky (time of day, cloud drift)
-  if (m_SkyRenderer && m_Camera) {
-    m_SkyRenderer->Update(deltaTime, m_Camera->GetPosition());
+  if (m_SkySystem && m_Camera) {
+    m_SkySystem->Update(deltaTime, m_Camera->GetPosition());
   }
 
   // Update chunk loading based on camera position
@@ -463,15 +463,15 @@ void Engine::Update(float deltaTime) {
   }
 }
 
-void Engine::RenderShadowPass() {
+void Application::RenderShadowPass() {
   if (!m_ShadowMap || !m_ShadowShader || !m_ChunkManager || !m_Camera) {
     return;
   }
 
-  // Get sun direction from SkyRenderer
+  // Get sun direction from SkySystem
   glm::vec3 sunDir = glm::normalize(glm::vec3(0.5f, 1.0f, 0.3f));
-  if (m_SkyRenderer) {
-    sunDir = m_SkyRenderer->GetSunDirection();
+  if (m_SkySystem) {
+    sunDir = m_SkySystem->GetSunDirection();
   }
 
   // Skip shadow pass if sun is below horizon
@@ -556,7 +556,7 @@ void Engine::RenderShadowPass() {
   m_ShadowMap->Unbind();
 }
 
-void Engine::RenderSSAOPass() {
+void Application::RenderSSAOPass() {
   if (!m_SSAO || !m_SSAO->IsEnabled() || !m_ChunkManager || !m_Camera) {
     return;
   }
@@ -586,11 +586,11 @@ void Engine::RenderSSAOPass() {
   glViewport(0, 0, m_Window->GetWidth(), m_Window->GetHeight());
 }
 
-void Engine::Render() {
-  // Get dynamic sky color from SkyRenderer (or default sky blue)
+void Application::Render() {
+  // Get dynamic sky color from SkySystem (or default sky blue)
   glm::vec3 skyColor = glm::vec3(0.5f, 0.7f, 1.0f);
-  if (m_SkyRenderer) {
-    skyColor = m_SkyRenderer->GetSkyColor();
+  if (m_SkySystem) {
+    skyColor = m_SkySystem->GetSkyColor();
   }
 
   glClearColor(skyColor.r, skyColor.g, skyColor.b, 1.0f);
@@ -608,10 +608,10 @@ void Engine::Render() {
     glm::vec3 lightDir = glm::normalize(glm::vec3(0.5f, 1.0f, 0.3f));
     float ambientStrength = 0.35f;
 
-    // Use sun direction and ambient from SkyRenderer if available
-    if (m_SkyRenderer) {
-      lightDir = m_SkyRenderer->GetSunDirection();
-      ambientStrength = m_SkyRenderer->GetAmbientStrength();
+    // Use sun direction and ambient from SkySystem if available
+    if (m_SkySystem) {
+      lightDir = m_SkySystem->GetSunDirection();
+      ambientStrength = m_SkySystem->GetAmbientStrength();
     }
 
     // Determine if shadows should be enabled (only during day when sun is up)
@@ -644,9 +644,9 @@ void Engine::Render() {
     glViewport(0, 0, m_Window->GetWidth(), m_Window->GetHeight());
 
     // === PASS 0: Render sky (depth write OFF) ===
-    if (m_SkyRenderer) {
+    if (m_SkySystem) {
       glDepthMask(GL_FALSE); // Don't write to depth buffer
-      m_SkyRenderer->Render(*m_Camera, aspectRatio);
+      m_SkySystem->Render(*m_Camera, aspectRatio);
       glDepthMask(GL_TRUE); // Re-enable depth writing
     }
 
@@ -724,12 +724,12 @@ void Engine::Render() {
     }
 
     // === PASS 2.5: Render weather (rain/snow) ===
-    if (m_SkyRenderer && m_SkyRenderer->IsWeatherEnabled()) {
+    if (m_SkySystem && m_SkySystem->IsWeatherEnabled()) {
       glEnable(GL_BLEND);
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
       glDepthMask(GL_FALSE);
 
-      m_SkyRenderer->RenderWeather(*m_Camera, aspectRatio);
+      m_SkySystem->RenderWeather(*m_Camera, aspectRatio);
 
       glDepthMask(GL_TRUE);
       glDisable(GL_BLEND);
@@ -742,14 +742,14 @@ void Engine::Render() {
   RenderCrosshair();
 }
 
-void Engine::UpdateTargetedBlock() {
+void Application::UpdateTargetedBlock() {
   if (m_Camera && m_ChunkManager) {
     Ray ray = m_Camera->GetViewRay();
     m_TargetedBlock = Voxel::Raycast(ray, *m_ChunkManager, 8.0f);
   }
 }
 
-void Engine::OnMouseButton(int button, int action) {
+void Application::OnMouseButton(int button, int action) {
   // Only process press events
   if (action != GLFW_PRESS) {
     return;
@@ -809,7 +809,7 @@ void Engine::OnMouseButton(int button, int action) {
   }
 }
 
-void Engine::SetupCrosshair() {
+void Application::SetupCrosshair() {
   // Crosshair size in NDC (normalized device coordinates)
   // We'll update these dynamically in RenderCrosshair to account for aspect ratio
   // Using a smaller base size (in terms of Y-axis NDC)
@@ -845,7 +845,7 @@ void Engine::SetupCrosshair() {
   LOG_INFO("Crosshair initialized");
 }
 
-void Engine::RenderCrosshair() {
+void Application::RenderCrosshair() {
   if (!m_UIShader || !m_UIShader->IsValid() || m_CrosshairVAO == 0) {
     return;
   }
@@ -898,7 +898,7 @@ void Engine::RenderCrosshair() {
   glEnable(GL_DEPTH_TEST);
 }
 
-void Engine::CleanupCrosshair() {
+void Application::CleanupCrosshair() {
   if (m_CrosshairVAO != 0) {
     glDeleteVertexArrays(1, &m_CrosshairVAO);
     m_CrosshairVAO = 0;
@@ -913,7 +913,7 @@ void Engine::CleanupCrosshair() {
 // STATE MANAGEMENT METHODS
 // ============================================================================
 
-void Engine::UpdateTitleScreen(float /*deltaTime*/) {
+void Application::UpdateTitleScreen(float /*deltaTime*/) {
   // Get mouse position for button hover
   double mouseX, mouseY;
   glfwGetCursorPos(m_Window->GetHandle(), &mouseX, &mouseY);
@@ -924,7 +924,7 @@ void Engine::UpdateTitleScreen(float /*deltaTime*/) {
   }
 }
 
-void Engine::RenderTitleScreen() {
+void Application::RenderTitleScreen() {
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -933,7 +933,7 @@ void Engine::RenderTitleScreen() {
   }
 }
 
-void Engine::UpdateSettingsScreen(float /*deltaTime*/) {
+void Application::UpdateSettingsScreen(float /*deltaTime*/) {
   // Get mouse position for button hover
   double mouseX, mouseY;
   glfwGetCursorPos(m_Window->GetHandle(), &mouseX, &mouseY);
@@ -944,7 +944,7 @@ void Engine::UpdateSettingsScreen(float /*deltaTime*/) {
   }
 }
 
-void Engine::RenderSettingsScreen() {
+void Application::RenderSettingsScreen() {
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -953,7 +953,7 @@ void Engine::RenderSettingsScreen() {
   }
 }
 
-void Engine::UpdateLoadingScreen(float deltaTime) {
+void Application::UpdateLoadingScreen(float deltaTime) {
   // Start world setup if not already started
   if (!m_WorldSetupStarted) {
     m_WorldSetupStarted = true;
@@ -992,7 +992,7 @@ void Engine::UpdateLoadingScreen(float deltaTime) {
   }
 }
 
-void Engine::RenderLoadingScreen() {
+void Application::RenderLoadingScreen() {
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -1001,7 +1001,7 @@ void Engine::RenderLoadingScreen() {
   }
 }
 
-void Engine::TransitionToState(GameState newState) {
+void Application::TransitionToState(GameState newState) {
   GameState oldState = m_CurrentState;
   (void)oldState; // Unused but available for logging
   m_CurrentState = newState;

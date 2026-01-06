@@ -65,8 +65,8 @@ public:
 private:
   void LoadTextures();
   void UpdateLayout(int screenWidth, int screenHeight);
-  void SyncFromConfig(); // Load current values from RenderConfig/GameConfig
-  void SyncToConfig();   // Save current values to RenderConfig/GameConfig
+  void SyncFromConfig(); // Load current values from GraphicsSettings/GameConfig
+  void SyncToConfig();   // Save current values to GraphicsSettings/GameConfig
   void DrawSettingRow(int screenWidth, const SettingRow &row,
                       const std::string &valueText);
 

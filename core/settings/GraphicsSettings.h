@@ -1,7 +1,7 @@
 #pragma once
 
 /**
- * Render Configuration
+ * GraphicsSettings
  *
  * Singleton class for rendering settings that can be modified at runtime.
  * Part of core/ engine layer - separated from world/GameConfig for modularity.
@@ -9,14 +9,14 @@
 
 namespace Core {
 
-class RenderConfig {
+class GraphicsSettings {
 public:
   /// Get the singleton instance
-  static RenderConfig &Instance();
+  static GraphicsSettings &Instance();
 
   // Non-copyable
-  RenderConfig(const RenderConfig &) = delete;
-  RenderConfig &operator=(const RenderConfig &) = delete;
+  GraphicsSettings(const GraphicsSettings &) = delete;
+  GraphicsSettings &operator=(const GraphicsSettings &) = delete;
 
   // =========================================================================
   // RENDERING SETTINGS
@@ -61,7 +61,7 @@ public:
   void ResetToDefaults();
 
 private:
-  RenderConfig() = default;
+  GraphicsSettings() = default;
 };
 
 } // namespace Core

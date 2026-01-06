@@ -2,8 +2,8 @@
 
 namespace Core {
 
-DisplayConfig &DisplayConfig::Instance() {
-  static DisplayConfig instance;
+VideoSettings &VideoSettings::Instance() {
+  static VideoSettings instance;
   return instance;
 }
 
