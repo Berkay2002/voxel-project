@@ -105,6 +105,7 @@ add_executable(${PROJECT_NAME}
     core/ShadowMap.cpp
     core/SSAO.cpp
     core/TextureRegistry.cpp
+    core/DisplayConfig.cpp
     world/Chunk.cpp
     world/ChunkMeshBuilder.cpp
     world/TerrainGenerator.cpp

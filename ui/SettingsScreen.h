@@ -7,7 +7,8 @@
 
 namespace Core {
 class Texture;
-}
+class Window;
+} // namespace Core
 
 namespace UI {
 
@@ -58,6 +59,9 @@ public:
   /// Set callback for when "Done" is clicked
   void SetOnBack(std::function<void()> callback) { m_OnBack = callback; }
 
+  /// Set window reference for mode switching
+  void SetWindow(Core::Window *window) { m_Window = window; }
+
 private:
   void LoadTextures();
   void UpdateLayout(int screenWidth, int screenHeight);
@@ -67,6 +71,7 @@ private:
                       const std::string &valueText);
 
   UIRenderer &m_Renderer;
+  Core::Window *m_Window = nullptr; // For window mode switching
 
   // Textures
   std::unique_ptr<Core::Texture> m_BackgroundTex;
@@ -74,6 +79,7 @@ private:
   std::unique_ptr<Core::Texture> m_ButtonHoverTex;
 
   // Text textures for labels
+  std::unique_ptr<Core::Texture> m_WindowModeText;
   std::unique_ptr<Core::Texture> m_RenderDistanceText;
   std::unique_ptr<Core::Texture> m_ShadowsText;
   std::unique_ptr<Core::Texture> m_SSAOText;
@@ -83,6 +89,7 @@ private:
   std::unique_ptr<Core::Texture> m_TitleOptionsText;
 
   // Setting rows
+  SettingRow m_WindowMode;
   SettingRow m_RenderDistance;
   SettingRow m_Shadows;
   SettingRow m_SSAO;
@@ -101,3 +108,4 @@ private:
 };
 
 } // namespace UI
+

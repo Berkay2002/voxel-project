@@ -54,9 +54,13 @@ Engine::Engine() {
   LOG_INFO(std::string("OpenGL Version: ") + (version ? version : "unknown"));
   LOG_INFO(std::string("Renderer: ") + (renderer ? renderer : "unknown"));
 
-  // Set viewport resize callback
-  m_Window->SetResizeCallback([](int width, int height) {
+  // Set viewport resize callback (captures this for SSAO resize)
+  m_Window->SetResizeCallback([this](int width, int height) {
     glViewport(0, 0, width, height);
+    // Resize SSAO render targets
+    if (m_SSAO) {
+      m_SSAO->Resize(width, height);
+    }
     LOG_DEBUG("Viewport resized: " + std::to_string(width) + "x" +
               std::to_string(height));
   });
@@ -101,6 +105,7 @@ Engine::Engine() {
 
   // Setup Settings Screen
   m_SettingsScreen = std::make_unique<UI::SettingsScreen>(*m_UIRenderer);
+  m_SettingsScreen->SetWindow(m_Window.get());
   m_SettingsScreen->SetOnBack(
       [this]() { TransitionToState(GameState::TITLE_SCREEN); });
 
@@ -806,13 +811,13 @@ void Engine::OnMouseButton(int button, int action) {
 
 void Engine::SetupCrosshair() {
   // Crosshair size in NDC (normalized device coordinates)
-  // Adjust these for larger/smaller crosshair
-  const float size = 0.02f; // Length of each arm
-  const float gap =
-      0.005f; // Gap in the center (optional, set to 0 for solid +)
+  // We'll update these dynamically in RenderCrosshair to account for aspect ratio
+  // Using a smaller base size (in terms of Y-axis NDC)
+  const float size = 0.015f; // Smaller arm length
 
   // Crosshair vertices: horizontal line + vertical line
   // Drawing as GL_LINES (pairs of vertices)
+  // Note: These will be dynamically updated in RenderCrosshair for aspect ratio
   float vertices[] = {
       // Horizontal line (left to right)
       -size, 0.0f, // Left point
@@ -828,7 +833,8 @@ void Engine::SetupCrosshair() {
   glBindVertexArray(m_CrosshairVAO);
 
   glBindBuffer(GL_ARRAY_BUFFER, m_CrosshairVBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  // Use GL_DYNAMIC_DRAW since we update vertices each frame for aspect ratio
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
 
   // Position attribute (location 0)
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)0);
@@ -843,6 +849,29 @@ void Engine::RenderCrosshair() {
   if (!m_UIShader || !m_UIShader->IsValid() || m_CrosshairVAO == 0) {
     return;
   }
+
+  // Calculate aspect ratio and correct crosshair size
+  float aspectRatio = static_cast<float>(m_Window->GetWidth()) /
+                      static_cast<float>(m_Window->GetHeight());
+  const float size = 0.015f; // Base size in NDC (Y-axis)
+  
+  // Correct horizontal size for aspect ratio so crosshair appears square
+  float hSize = size / aspectRatio;
+  float vSize = size;
+
+  // Update vertices dynamically for aspect ratio correction
+  float vertices[] = {
+      // Horizontal line (left to right)
+      -hSize, 0.0f,
+      hSize, 0.0f,
+      // Vertical line (bottom to top)
+      0.0f, -vSize,
+      0.0f, vSize
+  };
+
+  // Update VBO with corrected vertices
+  glBindBuffer(GL_ARRAY_BUFFER, m_CrosshairVBO);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
 
   // Disable depth test for UI
   glDisable(GL_DEPTH_TEST);

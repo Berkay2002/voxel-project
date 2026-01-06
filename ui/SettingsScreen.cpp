@@ -1,6 +1,8 @@
 #include "ui/SettingsScreen.h"
+#include "core/DisplayConfig.h"
 #include "core/Logger.h"
 #include "core/Texture.h"
+#include "core/Window.h"
 #include "ui/UIRenderer.h"
 #include "world/RuntimeConfig.h"
 
@@ -24,6 +26,8 @@ void SettingsScreen::LoadTextures() {
       "assets/textures/gui/sprites/widget/button_highlighted.png");
 
   // Load label text textures
+  m_WindowModeText = std::make_unique<Core::Texture>(
+      "assets/textures/gui/text/window_mode.png");
   m_RenderDistanceText = std::make_unique<Core::Texture>(
       "assets/textures/gui/text/render_distance.png");
   m_ShadowsText =
@@ -44,6 +48,14 @@ void SettingsScreen::LoadTextures() {
 
 void SettingsScreen::SyncFromConfig() {
   auto &config = Voxel::Config::RuntimeConfig::Instance();
+  auto &displayConfig = Core::DisplayConfig::Instance();
+
+  // Window mode (0=Windowed, 1=Borderless, 2=Fullscreen)
+  m_WindowMode.label = "Window Mode";
+  m_WindowMode.value = static_cast<float>(displayConfig.windowMode);
+  m_WindowMode.minVal = 0.0f;
+  m_WindowMode.maxVal = 2.0f;
+  m_WindowMode.step = 1.0f;
 
   m_RenderDistance.label = "Render Distance";
   m_RenderDistance.value = static_cast<float>(config.renderDistance);
@@ -127,11 +139,12 @@ void SettingsScreen::UpdateLayout(int screenWidth, int screenHeight) {
     row.increaseBtn.height = rowHeight;
   };
 
-  setupRow(m_RenderDistance, 0);
-  setupRow(m_Shadows, 1);
-  setupRow(m_SSAO, 2);
-  setupRow(m_Clouds, 3);
-  setupRow(m_DayCycleSpeed, 4);
+  setupRow(m_WindowMode, 0);
+  setupRow(m_RenderDistance, 1);
+  setupRow(m_Shadows, 2);
+  setupRow(m_SSAO, 3);
+  setupRow(m_Clouds, 4);
+  setupRow(m_DayCycleSpeed, 5);
 
   // Back button at bottom
   float backWidth = 200.0f;
@@ -150,6 +163,8 @@ void SettingsScreen::Update(float mouseX, float mouseY) {
   };
 
   // Check all setting row buttons
+  checkHover(m_WindowMode.decreaseBtn);
+  checkHover(m_WindowMode.increaseBtn);
   checkHover(m_RenderDistance.decreaseBtn);
   checkHover(m_RenderDistance.increaseBtn);
   checkHover(m_Shadows.decreaseBtn);
@@ -178,6 +193,24 @@ bool SettingsScreen::OnClick(float mouseX, float mouseY) {
   auto adjustValue = [](SettingRow &row, float delta) {
     row.value = glm::clamp(row.value + delta, row.minVal, row.maxVal);
   };
+
+  // Check window mode
+  if (handleClick(m_WindowMode.decreaseBtn)) {
+    adjustValue(m_WindowMode, -m_WindowMode.step);
+    // Apply window mode change immediately
+    if (m_Window) {
+      m_Window->SetWindowMode(static_cast<Core::WindowMode>(static_cast<int>(m_WindowMode.value)));
+    }
+    return true;
+  }
+  if (handleClick(m_WindowMode.increaseBtn)) {
+    adjustValue(m_WindowMode, m_WindowMode.step);
+    // Apply window mode change immediately
+    if (m_Window) {
+      m_Window->SetWindowMode(static_cast<Core::WindowMode>(static_cast<int>(m_WindowMode.value)));
+    }
+    return true;
+  }
 
   // Check render distance
   if (handleClick(m_RenderDistance.decreaseBtn)) {
@@ -342,6 +375,7 @@ void SettingsScreen::Render(int screenWidth, int screenHeight) {
   }
 
   // Draw setting rows
+  DrawSettingRow(screenWidth, m_WindowMode, "");
   DrawSettingRow(screenWidth, m_RenderDistance, "");
   DrawSettingRow(screenWidth, m_Shadows, "");
   DrawSettingRow(screenWidth, m_SSAO, "");
@@ -362,6 +396,7 @@ void SettingsScreen::Render(int screenWidth, int screenHeight) {
       m_Renderer.DrawTexture(*tex, labelX, labelY, labelWidth, labelHeight);
     }
   };
+  drawLabelText(m_WindowMode, m_WindowModeText.get(), 160.0f);
   drawLabelText(m_RenderDistance, m_RenderDistanceText.get(), 180.0f);
   drawLabelText(m_Shadows, m_ShadowsText.get(), 120.0f);
   drawLabelText(m_SSAO, m_SSAOText.get(), 80.0f);

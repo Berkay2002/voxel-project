@@ -1,10 +1,11 @@
 #pragma once
 
+#include "core/DisplayConfig.h"
 #include <functional>
 #include <string>
 
-
 struct GLFWwindow;
+struct GLFWmonitor;
 
 namespace Core {
 
@@ -26,6 +27,16 @@ public:
   [[nodiscard]] int GetWidth() const { return m_Width; }
   [[nodiscard]] int GetHeight() const { return m_Height; }
 
+  // Window mode switching (Windowed / Borderless / Fullscreen)
+  void SetWindowMode(WindowMode mode);
+  [[nodiscard]] WindowMode GetWindowMode() const { return m_WindowMode; }
+
+  // Get primary monitor resolution
+  void GetMonitorSize(int &width, int &height) const;
+
+  // VSync control
+  void SetVSync(bool enabled);
+
   // Callbacks
   using ResizeCallback = std::function<void(int, int)>;
   void SetResizeCallback(ResizeCallback callback);
@@ -34,7 +45,11 @@ private:
   GLFWwindow *m_Window = nullptr;
   int m_Width;
   int m_Height;
+  WindowMode m_WindowMode = WindowMode::WINDOWED;
   ResizeCallback m_ResizeCallback;
+
+  // Helper to get primary monitor
+  GLFWmonitor *GetPrimaryMonitor() const;
 
   static void FramebufferSizeCallback(GLFWwindow *window, int width,
                                       int height);
