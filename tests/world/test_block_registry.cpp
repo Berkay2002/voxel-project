@@ -15,7 +15,8 @@ protected:
     
     void SetUp() override {
         // Create a temporary test JSON config
-        testConfigPath = "/tmp/test_blocks.json";
+        auto tempDir = std::filesystem::temp_directory_path();
+        testConfigPath = (tempDir / "test_blocks.json").string();
         CreateTestBlockConfig();
     }
     
