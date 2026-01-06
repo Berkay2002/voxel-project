@@ -6,7 +6,7 @@
 
 **A high-performance C++20 Voxel Game Engine built from scratch.**
 
-![Build Status](https://github.com/berkay2002/voxel-project/actions/workflows/tests.yml/badge.svg)
+![Build Status](https://github.com/Berkay2002/voxel-project/actions/workflows/tests.yml/badge.svg)
 
 </div>
 
