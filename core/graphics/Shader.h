@@ -38,6 +38,7 @@ private:
   unsigned int m_ID = 0;
   
   // Cache uniform locations to avoid repeated glGetUniformLocation calls
+  // Note: Not thread-safe. Shader should only be used from the thread that owns the OpenGL context.
   mutable std::unordered_map<std::string, int> m_UniformLocationCache;
 
   static std::string ReadFile(const std::string &path);

@@ -6,8 +6,8 @@
 
 namespace Voxel {
 
-// Vertex structure for chunk mesh  
-// Defined here to avoid circular dependency with ChunkMeshBuilder.h
+// Vertex structure for chunk mesh.
+// Defined here to avoid circular dependency with ChunkMeshBuilder.h.
 struct ChunkVertex {
     glm::vec3 position;
     glm::vec2 uv;

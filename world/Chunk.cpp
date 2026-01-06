@@ -261,7 +261,10 @@ ChunkMeshData Chunk::GenerateMeshData() const {
     data.chunkZ = m_ChunkZ;
     data.valid = true;
     
-    // Move mesh data directly (no serialization overhead)
+    // Move mesh data directly (no serialization overhead).
+    // Performance: Eliminates vertex conversion loop that would process each vertex
+    // (typically 4000-8000 vertices per chunk) to convert from struct to flat floats.
+    // Using std::move() achieves zero-copy transfer of mesh data to main thread.
     data.opaqueVertices = std::move(result.opaqueMesh.vertices);
     data.opaqueIndices = std::move(result.opaqueMesh.indices);
     data.waterVertices = std::move(result.waterMesh.vertices);
