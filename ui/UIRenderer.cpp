@@ -1,7 +1,7 @@
 #include "ui/UIRenderer.h"
 #include "core/Logger.h"
-#include "core/Shader.h"
-#include "core/Texture.h"
+#include "core/graphics/Shader.h"
+#include "core/graphics/Texture.h"
 
 #include <algorithm>
 #include <glad/gl.h>

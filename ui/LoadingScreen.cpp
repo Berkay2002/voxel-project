@@ -1,6 +1,6 @@
 #include "ui/LoadingScreen.h"
 #include "core/Logger.h"
-#include "core/Texture.h"
+#include "core/graphics/Texture.h"
 #include "ui/UIRenderer.h"
 
 #include <algorithm>

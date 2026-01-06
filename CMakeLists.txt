@@ -93,12 +93,12 @@ add_executable(${PROJECT_NAME}
     main.cpp
     core/Window.cpp
     core/Engine.cpp
-    core/Shader.cpp
-    core/VertexBuffer.cpp
-    core/IndexBuffer.cpp
-    core/VertexArray.cpp
-    core/Texture.cpp
-    core/TextureArray.cpp
+    core/graphics/Shader.cpp
+    core/graphics/VertexBuffer.cpp
+    core/graphics/IndexBuffer.cpp
+    core/graphics/VertexArray.cpp
+    core/graphics/Texture.cpp
+    core/graphics/TextureArray.cpp
     core/Camera.cpp
     core/Frustum.cpp
     core/BlockOutline.cpp

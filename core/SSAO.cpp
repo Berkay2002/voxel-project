@@ -1,6 +1,6 @@
 #include "core/SSAO.h"
 #include "core/Logger.h"
-#include "core/Shader.h"
+#include "core/graphics/Shader.h"
 
 #include <glad/gl.h>
 #include <random>

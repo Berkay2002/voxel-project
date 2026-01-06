@@ -2,7 +2,7 @@
 #include "core/DisplayConfig.h"
 #include "core/Logger.h"
 #include "core/RenderConfig.h"
-#include "core/Texture.h"
+#include "core/graphics/Texture.h"
 #include "core/Window.h"
 #include "ui/UIRenderer.h"
 #include "world/GameConfig.h"

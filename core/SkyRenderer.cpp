@@ -2,8 +2,8 @@
 #include "world/WorldConfig.h"
 #include "core/Camera.h"
 #include "core/Logger.h"
-#include "core/Shader.h"
-#include "core/Texture.h"
+#include "core/graphics/Shader.h"
+#include "core/graphics/Texture.h"
 
 #include <glad/gl.h>
 #define GLFW_INCLUDE_NONE

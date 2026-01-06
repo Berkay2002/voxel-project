@@ -1,5 +1,5 @@
 #include "Shader.h"
-#include "Logger.h"
+#include "../Logger.h"
 
 #include <glad/gl.h>
 #include <glm/gtc/type_ptr.hpp>

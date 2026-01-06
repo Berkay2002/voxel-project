@@ -1,5 +1,5 @@
 #include "Texture.h"
-#include "Logger.h"
+#include "../Logger.h"
 
 #include <glad/gl.h>
 

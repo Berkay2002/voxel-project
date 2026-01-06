@@ -1,6 +1,6 @@
 #include "ui/TitleScreen.h"
 #include "core/Logger.h"
-#include "core/Texture.h"
+#include "core/graphics/Texture.h"
 #include "ui/UIRenderer.h"
 
 namespace UI {

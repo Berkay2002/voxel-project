@@ -3,9 +3,9 @@
 #include "core/Camera.h"
 #include "core/Logger.h"
 #include "core/SSAO.h"
-#include "core/Shader.h"
+#include "core/graphics/Shader.h"
 #include "core/ShadowMap.h"
-#include "core/TextureArray.h"
+#include "core/graphics/TextureArray.h"
 #include "core/TextureRegistry.h"
 #include "core/Window.h"
 

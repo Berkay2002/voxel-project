@@ -1,6 +1,6 @@
 #include "ChunkManager.h"
 #include "SpaghettiCaveCarver.h"
-#include "core/Shader.h"
+#include "core/graphics/Shader.h"
 #include "core/Camera.h"
 #include "core/Frustum.h"
 #include "core/Logger.h"

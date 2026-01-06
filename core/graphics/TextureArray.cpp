@@ -1,5 +1,5 @@
 #include "TextureArray.h"
-#include "Logger.h"
+#include "../Logger.h"
 
 #include <glad/gl.h>
 #include "stb_image.h"

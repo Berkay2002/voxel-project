@@ -1,5 +1,5 @@
 #include "BlockOutline.h"
-#include "Shader.h"
+#include "graphics/Shader.h"
 #include "Logger.h"
 #include <glad/gl.h>
 
