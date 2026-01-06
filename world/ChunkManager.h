@@ -8,12 +8,14 @@
 #include <memory>
 #include <queue>
 #include <mutex>
+#include <vector>
 #include <glm/glm.hpp>
 #include <BS_thread_pool.hpp>
 
 namespace Core {
 class Shader;
 class Camera;
+class Frustum;
 }
 
 namespace Voxel {
@@ -33,6 +35,14 @@ struct ChunkCoordHash {
         // Combine x and z into a single hash
         return std::hash<int>()(coord.x) ^ (std::hash<int>()(coord.z) << 16);
     }
+};
+
+// Pre-computed visible chunk data (for reuse across render passes)
+struct VisibleChunk {
+    ChunkCoord coord;
+    Chunk* chunk;
+    glm::mat4 modelMatrix;
+    bool hasWater;
 };
 
 class ChunkManager {
@@ -97,8 +107,14 @@ private:
     // Rebuild a chunk's mesh asynchronously (used after block changes)
     void RebuildChunkMesh(int chunkX, int chunkZ);
 
+    // Update visible chunks cache (frustum culling + model matrix pre-compute)
+    void UpdateVisibleChunks(const Core::Frustum& frustum);
+
     // Const version of GetChunk for raycasting
     const Chunk* GetChunkConst(int chunkX, int chunkZ) const;
+
+    // Visible chunk cache (pre-computed per frame, reused across render passes)
+    std::vector<VisibleChunk> m_VisibleChunks;
 
     // Chunk storage
     std::unordered_map<ChunkCoord, std::unique_ptr<Chunk>, ChunkCoordHash> m_Chunks;

@@ -3,6 +3,7 @@
 #include "../graphics/Shader.h"
 
 #include <glad/gl.h>
+#include <glm/gtc/type_ptr.hpp>
 #include <random>
 #include <cmath>
 
@@ -57,6 +58,12 @@ void SSAO::CleanupResources() {
     if (m_QuadVBO) {
         glDeleteBuffers(1, &m_QuadVBO);
         m_QuadVBO = 0;
+    }
+    
+    // Delete kernel UBO
+    if (m_KernelUBO) {
+        glDeleteBuffers(1, &m_KernelUBO);
+        m_KernelUBO = 0;
     }
 }
 
@@ -179,6 +186,13 @@ bool SSAO::Setup(int width, int height) {
     GenerateNoiseTexture();
     SetupFullscreenQuad();
 
+    // Cache kernel uniform locations (avoids string allocation per frame)
+    for (int i = 0; i < 64; ++i) {
+        m_KernelUniformLocations[i] = glGetUniformLocation(
+            m_SSAOShader->GetID(), ("u_Samples[" + std::to_string(i) + "]").c_str()
+        );
+    }
+
     LOG_INFO("SSAO: Initialized at " + std::to_string(width) + "x" + std::to_string(height) +
              " (SSAO at " + std::to_string(m_SSAOWidth) + "x" + std::to_string(m_SSAOHeight) + ")");
 
@@ -248,6 +262,21 @@ void SSAO::GenerateKernel() {
 
         m_Kernel.push_back(sample);
     }
+
+    // Create UBO for kernel samples (std140 layout requires vec4 padding)
+    glGenBuffers(1, &m_KernelUBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, m_KernelUBO);
+    glBufferData(GL_UNIFORM_BUFFER, 64 * sizeof(glm::vec4), nullptr, GL_STATIC_DRAW);
+    
+    // Upload samples padded to vec4
+    for (int i = 0; i < 64; ++i) {
+        glm::vec4 padded(m_Kernel[i], 0.0f);
+        glBufferSubData(GL_UNIFORM_BUFFER, i * sizeof(glm::vec4), sizeof(glm::vec4), &padded);
+    }
+    
+    // Bind UBO to binding point 0 (matches shader layout binding=0)
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, m_KernelUBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 void SSAO::GenerateNoiseTexture() {
@@ -360,10 +389,7 @@ void SSAO::Calculate(const glm::mat4& projection, const glm::mat4& view) {
     m_SSAOShader->SetFloat("u_Bias", 0.025f);   // SSAO_BIAS
     m_SSAOShader->SetFloat("u_Power", 2.0f);    // SSAO_POWER
 
-    // Upload kernel samples
-    for (int i = 0; i < 64; ++i) {
-        m_SSAOShader->SetVec3("u_Samples[" + std::to_string(i) + "]", m_Kernel[i]);
-    }
+    // Kernel samples are in UBO (bound at setup), no per-frame upload needed
 
     // Render fullscreen quad
     glBindVertexArray(m_QuadVAO);

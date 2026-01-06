@@ -13,6 +13,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <array>
 #include <memory>
 #include <vector>
 
@@ -116,6 +117,8 @@ private:
 
     // Sample kernel (64 hemisphere samples)
     std::vector<glm::vec3> m_Kernel;
+    std::array<int, 64> m_KernelUniformLocations{};  // Cached u_Samples[i] locations
+    unsigned int m_KernelUBO = 0;  // UBO for kernel samples (std140 layout)
 
     // Fullscreen quad for post-processing
     unsigned int m_QuadVAO = 0;

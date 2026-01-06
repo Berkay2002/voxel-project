@@ -198,3 +198,10 @@ _Refer to `.agent/architecture_reference.md` for the full architectural breakdow
   - DisplayConfig → VideoSettings, RenderConfig → GraphicsSettings
 - **Phase R3**: ✅ Complete - Naming Conventions
   - Applied Unreal-style `m_b` prefix to boolean members
+
+### Performance Optimizations (2026-01-06)
+
+- **Phase 17**: ✅ Complete - Core Rendering Optimizations
+  - SSAO uniform location caching (no per-frame string allocs)
+  - Pre-computed chunk model matrices across 4 render passes
+  - SSAO kernel UBO (single buffer bind instead of 64 uniforms)

@@ -167,47 +167,27 @@ void ChunkManager::RenderAll(Core::Shader& shader, Core::Camera& camera, float a
     camera.UpdateFrustum(aspectRatio);
     const Core::Frustum& frustum = camera.GetFrustum();
     
+    // Pre-compute visible chunks with model matrices (reused by other passes)
+    UpdateVisibleChunks(frustum);
+    
     glm::mat4 viewProj = camera.GetViewProjectionMatrix(aspectRatio);
     
-    int renderedCount = 0;
-    int culledCount = 0;
-    
-    for (const auto& [coord, chunk] : m_Chunks) {
-        if (!chunk->HasMesh()) {
-            continue;
-        }
-
-        // Calculate world bounds for this chunk
-        float worldX = static_cast<float>(coord.x * CHUNK_WIDTH);
-        float worldZ = static_cast<float>(coord.z * CHUNK_DEPTH);
-        
-        // Chunk AABB for frustum culling
-        glm::vec3 minBounds(worldX, 0.0f, worldZ);
-        glm::vec3 maxBounds(worldX + CHUNK_WIDTH, CHUNK_HEIGHT, worldZ + CHUNK_DEPTH);
-        
-        // Skip rendering if chunk is outside frustum
-        if (!frustum.IsAABBVisible(minBounds, maxBounds)) {
-            culledCount++;
-            continue;
-        }
-        
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(worldX, 0.0f, worldZ));
-        glm::mat4 mvp = viewProj * model;
+    for (const auto& visible : m_VisibleChunks) {
+        glm::mat4 mvp = viewProj * visible.modelMatrix;
         
         shader.SetMat4("u_MVP", mvp);
-        shader.SetMat4("u_Model", model);  // For normal transformation
+        shader.SetMat4("u_Model", visible.modelMatrix);
         
-        chunk->Render();
-        renderedCount++;
+        visible.chunk->Render();
     }
     
     shader.Unbind();
     
     // Debug logging (can be toggled off in production)
     static int frameCounter = 0;
-    if (++frameCounter >= 60) {  // Log every 60 frames
-        LOG_DEBUG("Frustum culling: rendered " + std::to_string(renderedCount) + 
-                  ", culled " + std::to_string(culledCount) + " chunks");
+    if (++frameCounter >= 60) {
+        LOG_DEBUG("Frustum culling: rendered " + std::to_string(m_VisibleChunks.size()) + 
+                  " chunks, culled " + std::to_string(m_Chunks.size() - m_VisibleChunks.size()));
         frameCounter = 0;
     }
 }
@@ -215,36 +195,20 @@ void ChunkManager::RenderAll(Core::Shader& shader, Core::Camera& camera, float a
 void ChunkManager::RenderWater(Core::Shader& waterShader, Core::Camera& camera, float aspectRatio) {
     waterShader.Bind();
     
-    // Frustum should already be updated from RenderAll, but update just in case
-    const Core::Frustum& frustum = camera.GetFrustum();
-    
+    // Reuse pre-computed visible chunks from RenderAll
     glm::mat4 viewProj = camera.GetViewProjectionMatrix(aspectRatio);
     
-    for (const auto& [coord, chunk] : m_Chunks) {
-        if (!chunk->HasWaterMesh()) {
-            continue;
-        }
-
-        // Calculate world bounds for this chunk
-        float worldX = static_cast<float>(coord.x * CHUNK_WIDTH);
-        float worldZ = static_cast<float>(coord.z * CHUNK_DEPTH);
-        
-        // Chunk AABB for frustum culling
-        glm::vec3 minBounds(worldX, 0.0f, worldZ);
-        glm::vec3 maxBounds(worldX + CHUNK_WIDTH, CHUNK_HEIGHT, worldZ + CHUNK_DEPTH);
-        
-        // Skip rendering if chunk is outside frustum
-        if (!frustum.IsAABBVisible(minBounds, maxBounds)) {
+    for (const auto& visible : m_VisibleChunks) {
+        if (!visible.hasWater) {
             continue;
         }
         
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(worldX, 0.0f, worldZ));
-        glm::mat4 mvp = viewProj * model;
+        glm::mat4 mvp = viewProj * visible.modelMatrix;
         
         waterShader.SetMat4("u_MVP", mvp);
-        waterShader.SetMat4("u_Model", model);
+        waterShader.SetMat4("u_Model", visible.modelMatrix);
         
-        chunk->RenderWater();
+        visible.chunk->RenderWater();
     }
     
     waterShader.Unbind();
@@ -254,21 +218,10 @@ void ChunkManager::RenderAllShadow(Core::Shader& shadowShader, const glm::mat4& 
     shadowShader.Bind();
     shadowShader.SetMat4("u_LightSpaceMatrix", lightSpaceMatrix);
     
-    for (const auto& [coord, chunk] : m_Chunks) {
-        if (!chunk->HasMesh()) {
-            continue;
-        }
-        
-        // Calculate world position for this chunk
-        float worldX = static_cast<float>(coord.x * CHUNK_WIDTH);
-        float worldZ = static_cast<float>(coord.z * CHUNK_DEPTH);
-        
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(worldX, 0.0f, worldZ));
-        
-        shadowShader.SetMat4("u_Model", model);
-        
-        // Render only opaque geometry for shadows (water doesn't cast shadows)
-        chunk->Render();
+    // Reuse pre-computed visible chunks from RenderAll
+    for (const auto& visible : m_VisibleChunks) {
+        shadowShader.SetMat4("u_Model", visible.modelMatrix);
+        visible.chunk->Render();
     }
     
     shadowShader.Unbind();
@@ -277,24 +230,15 @@ void ChunkManager::RenderAllShadow(Core::Shader& shadowShader, const glm::mat4& 
 void ChunkManager::RenderAllDepth(Core::Shader& depthShader, const glm::mat4& view, const glm::mat4& projection) {
     depthShader.Bind();
     
-    for (const auto& [coord, chunk] : m_Chunks) {
-        if (!chunk->HasMesh()) {
-            continue;
-        }
-        
-        // Calculate world position for this chunk
-        float worldX = static_cast<float>(coord.x * CHUNK_WIDTH);
-        float worldZ = static_cast<float>(coord.z * CHUNK_DEPTH);
-        
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(worldX, 0.0f, worldZ));
-        glm::mat4 modelView = view * model;
+    // Reuse pre-computed visible chunks from RenderAll
+    for (const auto& visible : m_VisibleChunks) {
+        glm::mat4 modelView = view * visible.modelMatrix;
         glm::mat4 mvp = projection * modelView;
         
         depthShader.SetMat4("u_MVP", mvp);
         depthShader.SetMat4("u_ModelView", modelView);
         
-        // Render only opaque geometry (no water for SSAO)
-        chunk->Render();
+        visible.chunk->Render();
     }
     
     depthShader.Unbind();
@@ -307,6 +251,39 @@ const Chunk* ChunkManager::GetChunkConst(int chunkX, int chunkZ) const {
         return it->second.get();
     }
     return nullptr;
+}
+
+void ChunkManager::UpdateVisibleChunks(const Core::Frustum& frustum) {
+    m_VisibleChunks.clear();
+    m_VisibleChunks.reserve(m_Chunks.size());
+    
+    for (const auto& [coord, chunk] : m_Chunks) {
+        if (!chunk->HasMesh()) {
+            continue;
+        }
+        
+        // Calculate world bounds for this chunk
+        float worldX = static_cast<float>(coord.x * CHUNK_WIDTH);
+        float worldZ = static_cast<float>(coord.z * CHUNK_DEPTH);
+        
+        // Chunk AABB for frustum culling
+        glm::vec3 minBounds(worldX, 0.0f, worldZ);
+        glm::vec3 maxBounds(worldX + CHUNK_WIDTH, CHUNK_HEIGHT, worldZ + CHUNK_DEPTH);
+        
+        // Skip if chunk is outside frustum
+        if (!frustum.IsAABBVisible(minBounds, maxBounds)) {
+            continue;
+        }
+        
+        // Pre-compute and cache model matrix
+        VisibleChunk visible;
+        visible.coord = coord;
+        visible.chunk = chunk.get();
+        visible.modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(worldX, 0.0f, worldZ));
+        visible.hasWater = chunk->HasWaterMesh();
+        
+        m_VisibleChunks.push_back(visible);
+    }
 }
 
 BlockID ChunkManager::GetBlock(int worldX, int worldY, int worldZ) const {

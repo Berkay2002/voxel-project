@@ -10,7 +10,10 @@ uniform sampler2D u_DepthTex;   // Full-res depth buffer
 uniform sampler2D u_NormalTex;  // Full-res view-space normals
 uniform sampler2D u_NoiseTex;   // 4x4 rotation noise
 
-uniform vec3 u_Samples[64];     // Hemisphere sample kernel
+// Hemisphere sample kernel (UBO for efficiency - uploaded once at setup)
+layout(std140, binding = 0) uniform KernelBlock {
+    vec4 u_Samples[64];  // Padded to vec4 for std140 alignment
+};
 uniform mat4 u_Projection;      // Camera projection matrix
 uniform mat4 u_InvProjection;   // Inverse projection for depth reconstruction
 
@@ -63,7 +66,7 @@ void main() {
     for (int i = 0; i < sampleCount; ++i) {
         // Get sample position in view space
         // TBN transforms sphere sample to normal-oriented hemisphere
-        vec3 samplePos = fragPos + TBN * u_Samples[i] * u_Radius;
+        vec3 samplePos = fragPos + TBN * u_Samples[i].xyz * u_Radius;
         
         // Project sample to screen space
         vec4 offset = u_Projection * vec4(samplePos, 1.0);
