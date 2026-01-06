@@ -5,7 +5,6 @@
 #include <glm/glm.hpp>
 #include <memory>
 
-
 namespace Core {
 
 class Window;
@@ -28,6 +27,7 @@ namespace UI {
 class UIRenderer;
 class TitleScreen;
 class LoadingScreen;
+class SettingsScreen;
 } // namespace UI
 
 namespace Core {
@@ -51,8 +51,10 @@ public:
 private:
   // State-based update/render methods
   void UpdateTitleScreen(float deltaTime);
+  void UpdateSettingsScreen(float deltaTime);
   void UpdateLoadingScreen(float deltaTime);
   void RenderTitleScreen();
+  void RenderSettingsScreen();
   void RenderLoadingScreen();
   void TransitionToState(GameState newState);
 
@@ -76,6 +78,7 @@ private:
   std::unique_ptr<UI::UIRenderer> m_UIRenderer;
   std::unique_ptr<UI::TitleScreen> m_TitleScreen;
   std::unique_ptr<UI::LoadingScreen> m_LoadingScreen;
+  std::unique_ptr<UI::SettingsScreen> m_SettingsScreen;
 
   // Rendering resources
   std::unique_ptr<Shader> m_Shader;        // Opaque geometry shader (lit)

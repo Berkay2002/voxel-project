@@ -13,6 +13,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # ============================================================================
 if(MSVC)
     add_compile_options(/W4 /permissive-)
+    # Prevent Windows.h from defining min/max macros that conflict with STL
+    add_compile_definitions(NOMINMAX)
 else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
@@ -111,9 +113,11 @@ add_executable(${PROJECT_NAME}
     world/BlockRegistry.cpp
     world/VoxelRaycast.cpp
     world/SkyRenderer.cpp
+    world/RuntimeConfig.cpp
     ui/UIRenderer.cpp
     ui/TitleScreen.cpp
     ui/LoadingScreen.cpp
+    ui/SettingsScreen.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE

@@ -31,6 +31,45 @@ The `.agent` directory serves as the persistent "brain" and memory for AI agents
 - **Math**: GLM 1.0.1
 - **Noise**: FastNoiseLite 1.1.1
 
+## Building the Project
+
+### Windows (Visual Studio)
+
+**Prerequisites:**
+- Visual Studio 2022 (with C++ Desktop Development workload)
+- CMake 3.28+ (usually bundled with VS, or install separately)
+
+**Build Steps:**
+```powershell
+# Configure (generates Visual Studio solution)
+cmake -B build -S .
+
+# Build Release configuration
+cmake --build build --config Release
+
+# Run the game
+.\build\Release\VoxelEngine.exe
+```
+
+### Linux
+
+**Prerequisites:**
+- GCC 11+ or Clang 14+ (C++20 support)
+- CMake 3.28+
+- OpenGL development libraries: `sudo apt install libgl1-mesa-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev`
+
+**Build Steps:**
+```bash
+# Configure
+cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+
+# Build
+cmake --build build -j$(nproc)
+
+# Run the game
+./build/VoxelEngine
+```
+
 ## Architecture & Considerations
 
 - **Modular Core**: The engine (`core/`) must be decoupled from the game logic (`world/`).

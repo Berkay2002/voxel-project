@@ -3,7 +3,7 @@
 #include "core/Shader.h"
 #include "core/Texture.h"
 
-
+#include <algorithm>
 #include <glad/gl.h>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -102,7 +102,9 @@ void UIRenderer::UpdateQuad(float x, float y, float width, float height,
 
 void UIRenderer::DrawTexture(Core::Texture &texture, float x, float y,
                              float width, float height, const glm::vec4 &tint) {
-  DrawTextureUV(texture, x, y, width, height, 0.0f, 0.0f, 1.0f, 1.0f, tint);
+  // Flip V coordinates: OpenGL textures have origin at bottom-left,
+  // but our UI has origin at top-left
+  DrawTextureUV(texture, x, y, width, height, 0.0f, 1.0f, 1.0f, 0.0f, tint);
 }
 
 void UIRenderer::DrawTextureUV(Core::Texture &texture, float x, float y,
@@ -161,8 +163,8 @@ void UIRenderer::DrawTiled(Core::Texture &texture, float x, float y,
   // Draw tiles to cover the entire area
   for (float ty = y; ty < y + height; ty += tileHeight) {
     for (float tx = x; tx < x + width; tx += tileWidth) {
-      float tw = std::min(tileWidth, (x + width) - tx);
-      float th = std::min(tileHeight, (y + height) - ty);
+      float tw = (std::min)(tileWidth, (x + width) - tx);
+      float th = (std::min)(tileHeight, (y + height) - ty);
 
       // Calculate UV coords for partial tiles at edges
       float u1 = tw / tileWidth;

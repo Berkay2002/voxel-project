@@ -11,6 +11,7 @@
 
 // UI system
 #include "ui/LoadingScreen.h"
+#include "ui/SettingsScreen.h"
 #include "ui/TitleScreen.h"
 #include "ui/UIRenderer.h"
 
@@ -90,11 +91,18 @@ Engine::Engine() {
   // Setup Title Screen
   m_TitleScreen = std::make_unique<UI::TitleScreen>(*m_UIRenderer);
   m_TitleScreen->SetOnPlay([this]() { TransitionToState(GameState::LOADING); });
+  m_TitleScreen->SetOnOptions(
+      [this]() { TransitionToState(GameState::SETTINGS); });
   m_TitleScreen->SetOnQuit(
       [this]() { glfwSetWindowShouldClose(m_Window->GetHandle(), true); });
 
   // Setup Loading Screen
   m_LoadingScreen = std::make_unique<UI::LoadingScreen>(*m_UIRenderer);
+
+  // Setup Settings Screen
+  m_SettingsScreen = std::make_unique<UI::SettingsScreen>(*m_UIRenderer);
+  m_SettingsScreen->SetOnBack(
+      [this]() { TransitionToState(GameState::TITLE_SCREEN); });
 
   // Start in title screen state (world setup deferred to loading state)
   m_CurrentState = GameState::TITLE_SCREEN;
@@ -406,6 +414,11 @@ void Engine::Run() {
     case GameState::TITLE_SCREEN:
       UpdateTitleScreen(deltaTime);
       RenderTitleScreen();
+      break;
+
+    case GameState::SETTINGS:
+      UpdateSettingsScreen(deltaTime);
+      RenderSettingsScreen();
       break;
 
     case GameState::LOADING:
@@ -749,6 +762,18 @@ void Engine::OnMouseButton(int button, int action) {
     return;
   }
 
+  // Handle settings screen button clicks
+  if (m_CurrentState == GameState::SETTINGS &&
+      button == GLFW_MOUSE_BUTTON_LEFT) {
+    double mouseX, mouseY;
+    glfwGetCursorPos(m_Window->GetHandle(), &mouseX, &mouseY);
+    if (m_SettingsScreen) {
+      m_SettingsScreen->OnClick(static_cast<float>(mouseX),
+                                static_cast<float>(mouseY));
+    }
+    return;
+  }
+
   // In gameplay mode: only process when cursor is captured
   if (m_CurrentState != GameState::PLAYING || !m_CursorCaptured) {
     return;
@@ -879,6 +904,26 @@ void Engine::RenderTitleScreen() {
   }
 }
 
+void Engine::UpdateSettingsScreen(float /*deltaTime*/) {
+  // Get mouse position for button hover
+  double mouseX, mouseY;
+  glfwGetCursorPos(m_Window->GetHandle(), &mouseX, &mouseY);
+
+  if (m_SettingsScreen) {
+    m_SettingsScreen->Update(static_cast<float>(mouseX),
+                             static_cast<float>(mouseY));
+  }
+}
+
+void Engine::RenderSettingsScreen() {
+  glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  if (m_SettingsScreen) {
+    m_SettingsScreen->Render(m_Window->GetWidth(), m_Window->GetHeight());
+  }
+}
+
 void Engine::UpdateLoadingScreen(float deltaTime) {
   // Start world setup if not already started
   if (!m_WorldSetupStarted) {
@@ -929,11 +974,18 @@ void Engine::RenderLoadingScreen() {
 
 void Engine::TransitionToState(GameState newState) {
   GameState oldState = m_CurrentState;
+  (void)oldState; // Unused but available for logging
   m_CurrentState = newState;
 
   switch (newState) {
   case GameState::TITLE_SCREEN:
     LOG_INFO("Transitioning to Title Screen");
+    glfwSetInputMode(m_Window->GetHandle(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    m_CursorCaptured = false;
+    break;
+
+  case GameState::SETTINGS:
+    LOG_INFO("Transitioning to Settings Screen");
     glfwSetInputMode(m_Window->GetHandle(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     m_CursorCaptured = false;
     break;

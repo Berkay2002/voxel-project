@@ -3,7 +3,6 @@
 #include "core/Texture.h"
 #include "ui/UIRenderer.h"
 
-
 namespace UI {
 
 TitleScreen::TitleScreen(UIRenderer &renderer) : m_Renderer(renderer) {
@@ -28,6 +27,14 @@ void TitleScreen::LoadTextures() {
   m_ButtonHoverTex = std::make_unique<Core::Texture>(
       "assets/textures/gui/sprites/widget/button_highlighted.png");
 
+  // Load button text textures
+  m_SingleplayerTextTex = std::make_unique<Core::Texture>(
+      "assets/textures/gui/text/singleplayer.png");
+  m_OptionsTextTex =
+      std::make_unique<Core::Texture>("assets/textures/gui/text/options.png");
+  m_QuitTextTex =
+      std::make_unique<Core::Texture>("assets/textures/gui/text/quit_game.png");
+
   LOG_INFO("TitleScreen textures loaded");
 }
 
@@ -46,8 +53,8 @@ void TitleScreen::UpdateButtonLayout(int screenWidth, int screenHeight) {
   // Center buttons horizontally
   float centerX = (screenWidth - buttonWidth) / 2.0f;
 
-  // Position buttons below logo (roughly 60% down the screen)
-  float buttonsY = screenHeight * 0.55f;
+  // Position buttons below logo (70% down the screen)
+  float buttonsY = screenHeight * 0.70f;
 
   // Play button
   m_PlayButton.x = centerX;
@@ -55,9 +62,15 @@ void TitleScreen::UpdateButtonLayout(int screenWidth, int screenHeight) {
   m_PlayButton.width = buttonWidth;
   m_PlayButton.height = buttonHeight;
 
-  // Quit button (below play)
+  // Options button (below play)
+  m_OptionsButton.x = centerX;
+  m_OptionsButton.y = buttonsY + buttonHeight + buttonSpacing;
+  m_OptionsButton.width = buttonWidth;
+  m_OptionsButton.height = buttonHeight;
+
+  // Quit button (below options)
   m_QuitButton.x = centerX;
-  m_QuitButton.y = buttonsY + buttonHeight + buttonSpacing;
+  m_QuitButton.y = buttonsY + 2 * (buttonHeight + buttonSpacing);
   m_QuitButton.width = buttonWidth;
   m_QuitButton.height = buttonHeight;
 }
@@ -69,6 +82,13 @@ void TitleScreen::Update(float mouseX, float mouseY) {
                          mouseY >= m_PlayButton.y &&
                          mouseY <= m_PlayButton.y + m_PlayButton.height;
 
+  // Check options button hover
+  m_OptionsButton.hovered =
+      mouseX >= m_OptionsButton.x &&
+      mouseX <= m_OptionsButton.x + m_OptionsButton.width &&
+      mouseY >= m_OptionsButton.y &&
+      mouseY <= m_OptionsButton.y + m_OptionsButton.height;
+
   // Check quit button hover
   m_QuitButton.hovered = mouseX >= m_QuitButton.x &&
                          mouseX <= m_QuitButton.x + m_QuitButton.width &&
@@ -77,9 +97,18 @@ void TitleScreen::Update(float mouseX, float mouseY) {
 }
 
 bool TitleScreen::OnClick(float mouseX, float mouseY) {
+  (void)mouseX;
+  (void)mouseY;
+
   // Check play button
   if (m_PlayButton.hovered && m_OnPlay) {
     m_OnPlay();
+    return true;
+  }
+
+  // Check options button
+  if (m_OptionsButton.hovered && m_OnOptions) {
+    m_OnOptions();
     return true;
   }
 
@@ -99,7 +128,7 @@ void TitleScreen::Render(int screenWidth, int screenHeight) {
   m_Renderer.Begin();
 
   // Draw tiled background (darker tint for better contrast)
-  if (m_BackgroundTex && m_BackgroundTex->IsLoaded()) {
+  if (m_BackgroundTex && m_BackgroundTex->IsValid()) {
     // Tile size matches texture (typically 64x64 for Minecraft backgrounds)
     float tileSize = 64.0f;
     m_Renderer.DrawTiled(*m_BackgroundTex, 0, 0,
@@ -113,11 +142,17 @@ void TitleScreen::Render(int screenWidth, int screenHeight) {
   }
 
   // Draw logo (centered at top)
-  if (m_LogoTex && m_LogoTex->IsLoaded()) {
-    float logoWidth = 600.0f;
-    float logoHeight = 150.0f; // Maintain aspect ratio
+  if (m_LogoTex && m_LogoTex->IsValid()) {
+    // Use actual texture dimensions for proper aspect ratio
+    float texWidth = static_cast<float>(m_LogoTex->GetWidth());
+    float texHeight = static_cast<float>(m_LogoTex->GetHeight());
+    float aspectRatio = texWidth / texHeight;
+
+    // Scale to fit nicely on screen (max width 350px for good spacing)
+    float logoWidth = 350.0f;
+    float logoHeight = logoWidth / aspectRatio;
     float logoX = (screenWidth - logoWidth) / 2.0f;
-    float logoY = screenHeight * 0.12f;
+    float logoY = screenHeight * 0.15f;
 
     m_Renderer.DrawTexture(*m_LogoTex, logoX, logoY, logoWidth, logoHeight);
   }
@@ -126,37 +161,77 @@ void TitleScreen::Render(int screenWidth, int screenHeight) {
   if (m_ButtonTex && m_ButtonHoverTex) {
     Core::Texture &playTex =
         m_PlayButton.hovered ? *m_ButtonHoverTex : *m_ButtonTex;
-    if (playTex.IsLoaded()) {
+    if (playTex.IsValid()) {
       m_Renderer.DrawTexture(playTex, m_PlayButton.x, m_PlayButton.y,
                              m_PlayButton.width, m_PlayButton.height);
     }
 
-    // Draw "Singleplayer" text overlay (center of button) - using colored rect
-    // as placeholder In a full implementation, you'd use font rendering here
-    float textWidth = 120.0f;
-    float textHeight = 12.0f;
-    float textX = m_PlayButton.x + (m_PlayButton.width - textWidth) / 2.0f;
-    float textY = m_PlayButton.y + (m_PlayButton.height - textHeight) / 2.0f;
-    m_Renderer.DrawRect(textX, textY, textWidth, textHeight,
-                        glm::vec4(1.0f, 1.0f, 1.0f, 0.9f));
+    // Draw "Singleplayer" text overlay
+    if (m_SingleplayerTextTex && m_SingleplayerTextTex->IsValid()) {
+      float texW = static_cast<float>(m_SingleplayerTextTex->GetWidth());
+      float texH = static_cast<float>(m_SingleplayerTextTex->GetHeight());
+      // Use fixed pixel width for readability
+      float targetWidth = 200.0f;
+      float scale = targetWidth / texW;
+      float textWidth = texW * scale;
+      float textHeight = texH * scale;
+      float textX = m_PlayButton.x + (m_PlayButton.width - textWidth) / 2.0f;
+      float textY = m_PlayButton.y + (m_PlayButton.height - textHeight) / 2.0f;
+      m_Renderer.DrawTexture(*m_SingleplayerTextTex, textX, textY, textWidth,
+                             textHeight);
+    }
+  }
+
+  // Draw Options button
+  if (m_ButtonTex && m_ButtonHoverTex) {
+    Core::Texture &optionsTex =
+        m_OptionsButton.hovered ? *m_ButtonHoverTex : *m_ButtonTex;
+    if (optionsTex.IsValid()) {
+      m_Renderer.DrawTexture(optionsTex, m_OptionsButton.x, m_OptionsButton.y,
+                             m_OptionsButton.width, m_OptionsButton.height);
+    }
+
+    // Draw "Options" text overlay
+    if (m_OptionsTextTex && m_OptionsTextTex->IsValid()) {
+      float texW = static_cast<float>(m_OptionsTextTex->GetWidth());
+      float texH = static_cast<float>(m_OptionsTextTex->GetHeight());
+      // Use fixed pixel width for readability
+      float targetWidth = 140.0f;
+      float scale = targetWidth / texW;
+      float textWidth = texW * scale;
+      float textHeight = texH * scale;
+      float textX =
+          m_OptionsButton.x + (m_OptionsButton.width - textWidth) / 2.0f;
+      float textY =
+          m_OptionsButton.y + (m_OptionsButton.height - textHeight) / 2.0f;
+      m_Renderer.DrawTexture(*m_OptionsTextTex, textX, textY, textWidth,
+                             textHeight);
+    }
   }
 
   // Draw Quit button
   if (m_ButtonTex && m_ButtonHoverTex) {
     Core::Texture &quitTex =
         m_QuitButton.hovered ? *m_ButtonHoverTex : *m_ButtonTex;
-    if (quitTex.IsLoaded()) {
+    if (quitTex.IsValid()) {
       m_Renderer.DrawTexture(quitTex, m_QuitButton.x, m_QuitButton.y,
                              m_QuitButton.width, m_QuitButton.height);
     }
 
-    // Draw "Quit Game" text placeholder
-    float textWidth = 80.0f;
-    float textHeight = 12.0f;
-    float textX = m_QuitButton.x + (m_QuitButton.width - textWidth) / 2.0f;
-    float textY = m_QuitButton.y + (m_QuitButton.height - textHeight) / 2.0f;
-    m_Renderer.DrawRect(textX, textY, textWidth, textHeight,
-                        glm::vec4(1.0f, 1.0f, 1.0f, 0.9f));
+    // Draw "Quit Game" text overlay
+    if (m_QuitTextTex && m_QuitTextTex->IsValid()) {
+      float texW = static_cast<float>(m_QuitTextTex->GetWidth());
+      float texH = static_cast<float>(m_QuitTextTex->GetHeight());
+      // Use fixed pixel width for readability
+      float targetWidth = 170.0f;
+      float scale = targetWidth / texW;
+      float textWidth = texW * scale;
+      float textHeight = texH * scale;
+      float textX = m_QuitButton.x + (m_QuitButton.width - textWidth) / 2.0f;
+      float textY = m_QuitButton.y + (m_QuitButton.height - textHeight) / 2.0f;
+      m_Renderer.DrawTexture(*m_QuitTextTex, textX, textY, textWidth,
+                             textHeight);
+    }
   }
 
   m_Renderer.End();

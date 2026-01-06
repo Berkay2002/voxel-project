@@ -4,7 +4,6 @@
 #include <glm/glm.hpp>
 #include <memory>
 
-
 namespace Core {
 class Texture;
 }
@@ -42,6 +41,9 @@ public:
   /// Set callback for when "Quit" is clicked
   void SetOnQuit(std::function<void()> callback) { m_OnQuit = callback; }
 
+  /// Set callback for when "Options" is clicked
+  void SetOnOptions(std::function<void()> callback) { m_OnOptions = callback; }
+
 private:
   void LoadTextures();
   void UpdateButtonLayout(int screenWidth, int screenHeight);
@@ -54,12 +56,19 @@ private:
   std::unique_ptr<Core::Texture> m_ButtonTex;
   std::unique_ptr<Core::Texture> m_ButtonHoverTex;
 
+  // Text textures for button labels
+  std::unique_ptr<Core::Texture> m_SingleplayerTextTex;
+  std::unique_ptr<Core::Texture> m_OptionsTextTex;
+  std::unique_ptr<Core::Texture> m_QuitTextTex;
+
   // Buttons
   Button m_PlayButton;
+  Button m_OptionsButton;
   Button m_QuitButton;
 
   // Callbacks
   std::function<void()> m_OnPlay;
+  std::function<void()> m_OnOptions;
   std::function<void()> m_OnQuit;
 
   // Layout cache

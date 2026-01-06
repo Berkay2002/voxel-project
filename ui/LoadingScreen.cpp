@@ -3,7 +3,6 @@
 #include "core/Texture.h"
 #include "ui/UIRenderer.h"
 
-
 #include <algorithm>
 
 namespace UI {
@@ -38,7 +37,7 @@ void LoadingScreen::Render(int screenWidth, int screenHeight) {
   m_Renderer.Begin();
 
   // Draw tiled background (darker)
-  if (m_BackgroundTex && m_BackgroundTex->IsLoaded()) {
+  if (m_BackgroundTex && m_BackgroundTex->IsValid()) {
     float tileSize = 64.0f;
     m_Renderer.DrawTiled(*m_BackgroundTex, 0, 0,
                          static_cast<float>(screenWidth),
@@ -50,12 +49,16 @@ void LoadingScreen::Render(int screenWidth, int screenHeight) {
                         glm::vec4(0.0f, 0.0f, 0.0f, 0.5f));
   }
 
-  // Draw logo (centered, upper portion)
-  if (m_LogoTex && m_LogoTex->IsLoaded()) {
-    float logoWidth = 500.0f;
-    float logoHeight = 125.0f;
+  // Draw logo (centered, upper portion) - same sizing as TitleScreen
+  if (m_LogoTex && m_LogoTex->IsValid()) {
+    float texWidth = static_cast<float>(m_LogoTex->GetWidth());
+    float texHeight = static_cast<float>(m_LogoTex->GetHeight());
+    float aspectRatio = texWidth / texHeight;
+
+    float logoWidth = 350.0f;
+    float logoHeight = logoWidth / aspectRatio;
     float logoX = (screenWidth - logoWidth) / 2.0f;
-    float logoY = screenHeight * 0.2f;
+    float logoY = screenHeight * 0.10f;
 
     m_Renderer.DrawTexture(*m_LogoTex, logoX, logoY, logoWidth, logoHeight);
   }
