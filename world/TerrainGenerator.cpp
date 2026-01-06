@@ -61,9 +61,9 @@ BiomeType TerrainGenerator::GetBiomeAt(int worldX, int worldZ) const {
 }
 
 // Helper: smoothstep for smooth interpolation
-static float Smoothstep(float edge0, float edge1, float x) {
-    float t = std::clamp((x - edge0) / (edge1 - edge0), 0.0f, 1.0f);
-    return t * t * (3.0f - 2.0f * t);
+static float Smoothstep(float edge0, float edge1, float inputValue) {
+    float normalizedValue = std::clamp((inputValue - edge0) / (edge1 - edge0), 0.0f, 1.0f);
+    return normalizedValue * normalizedValue * (3.0f - 2.0f * normalizedValue);
 }
 
 // Get blended biome parameters at world position (smooth transitions)

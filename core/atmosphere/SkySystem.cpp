@@ -242,7 +242,7 @@ void SkySystem::SetTimeOfDay(float time) {
 }
 
 glm::vec3 SkySystem::GetSkyColor() const {
-    float t = m_TimeOfDay;
+    float normalizedTime = m_TimeOfDay;
     
     // Time periods:
     // 0.0-0.2: Night
@@ -251,28 +251,28 @@ glm::vec3 SkySystem::GetSkyColor() const {
     // 0.7-0.8: Dusk transition
     // 0.8-1.0: Night
     
-    if (t < 0.2f) {
+    if (normalizedTime < 0.2f) {
         // Night
         return SkyColors::NIGHT;
-    } else if (t < 0.25f) {
+    } else if (normalizedTime < 0.25f) {
         // Night → Dawn
-        float blend = (t - 0.2f) / 0.05f;
-        return glm::mix(SkyColors::NIGHT, SkyColors::DAWN, blend);
-    } else if (t < 0.3f) {
+        float transitionBlend = (normalizedTime - 0.2f) / 0.05f;
+        return glm::mix(SkyColors::NIGHT, SkyColors::DAWN, transitionBlend);
+    } else if (normalizedTime < 0.3f) {
         // Dawn → Day
-        float blend = (t - 0.25f) / 0.05f;
-        return glm::mix(SkyColors::DAWN, SkyColors::DAY, blend);
-    } else if (t < 0.7f) {
+        float transitionBlend = (normalizedTime - 0.25f) / 0.05f;
+        return glm::mix(SkyColors::DAWN, SkyColors::DAY, transitionBlend);
+    } else if (normalizedTime < 0.7f) {
         // Day
         return SkyColors::DAY;
-    } else if (t < 0.75f) {
+    } else if (normalizedTime < 0.75f) {
         // Day → Dusk
-        float blend = (t - 0.7f) / 0.05f;
-        return glm::mix(SkyColors::DAY, SkyColors::DUSK, blend);
-    } else if (t < 0.8f) {
+        float transitionBlend = (normalizedTime - 0.7f) / 0.05f;
+        return glm::mix(SkyColors::DAY, SkyColors::DUSK, transitionBlend);
+    } else if (normalizedTime < 0.8f) {
         // Dusk → Night
-        float blend = (t - 0.75f) / 0.05f;
-        return glm::mix(SkyColors::DUSK, SkyColors::NIGHT, blend);
+        float transitionBlend = (normalizedTime - 0.75f) / 0.05f;
+        return glm::mix(SkyColors::DUSK, SkyColors::NIGHT, transitionBlend);
     } else {
         // Night
         return SkyColors::NIGHT;
@@ -300,28 +300,28 @@ glm::vec3 SkySystem::GetSunDirection() const {
         return glm::vec3(0.0f, -1.0f, 0.0f);
     } else if (sunDir.y < horizonThreshold) {
         // Sun near horizon - blend between null light and actual sun direction
-        float t = sunDir.y / horizonThreshold;  // 0 at horizon, 1 at threshold
+        float horizonBlendFactor = sunDir.y / horizonThreshold;  // 0 at horizon, 1 at threshold
         glm::vec3 nullLight = glm::vec3(0.0f, -1.0f, 0.0f);
-        return glm::normalize(glm::mix(nullLight, sunDir, t));
+        return glm::normalize(glm::mix(nullLight, sunDir, horizonBlendFactor));
     }
     
     return sunDir;
 }
 
 float SkySystem::GetAmbientStrength() const {
-    float t = m_TimeOfDay;
+    float normalizedTime = m_TimeOfDay;
     
     // Lower ambient at night
-    if (t < 0.2f || t > 0.8f) {
+    if (normalizedTime < 0.2f || normalizedTime > 0.8f) {
         return 0.15f;  // Night
-    } else if (t < 0.3f) {
+    } else if (normalizedTime < 0.3f) {
         // Dawn transition
-        float blend = (t - 0.2f) / 0.1f;
-        return glm::mix(0.15f, 0.35f, blend);
-    } else if (t > 0.7f) {
+        float dawnBlend = (normalizedTime - 0.2f) / 0.1f;
+        return glm::mix(0.15f, 0.35f, dawnBlend);
+    } else if (normalizedTime > 0.7f) {
         // Dusk transition
-        float blend = (t - 0.7f) / 0.1f;
-        return glm::mix(0.35f, 0.15f, blend);
+        float duskBlend = (normalizedTime - 0.7f) / 0.1f;
+        return glm::mix(0.35f, 0.15f, duskBlend);
     }
     
     return 0.35f;  // Day
@@ -436,13 +436,13 @@ void SkySystem::RenderClouds(const Camera& camera, float aspectRatio) {
     
     // Calculate cloud brightness based on time of day
     float brightness = 1.0f;
-    float t = m_TimeOfDay;
-    if (t < 0.2f || t > 0.8f) {
+    float normalizedTime = m_TimeOfDay;
+    if (normalizedTime < 0.2f || normalizedTime > 0.8f) {
         brightness = 0.3f;  // Night
-    } else if (t < 0.3f) {
-        brightness = glm::mix(0.3f, 1.0f, (t - 0.2f) / 0.1f);  // Dawn
-    } else if (t > 0.7f) {
-        brightness = glm::mix(1.0f, 0.3f, (t - 0.7f) / 0.1f);  // Dusk
+    } else if (normalizedTime < 0.3f) {
+        brightness = glm::mix(0.3f, 1.0f, (normalizedTime - 0.2f) / 0.1f);  // Dawn
+    } else if (normalizedTime > 0.7f) {
+        brightness = glm::mix(1.0f, 0.3f, (normalizedTime - 0.7f) / 0.1f);  // Dusk
     }
     
     m_CloudShader->Bind();
@@ -524,16 +524,16 @@ bool SkySystem::IsCloudOccupied(int gridX, int gridZ) const {
     if (!m_CloudNoise) return false;
     
     // Apply drift offset for animation (cloud movement)
-    float x = static_cast<float>(gridX) + m_CloudOffset * 8.0f;
-    float z = static_cast<float>(gridZ);
+    float cloudWorldX = static_cast<float>(gridX) + m_CloudOffset * 8.0f;
+    float cloudWorldZ = static_cast<float>(gridZ);
     
     // Sample FastNoiseLite - returns values in [-1, 1] range
-    float noiseValue = m_CloudNoise->GetNoise(x, z);
+    float noiseValue = m_CloudNoise->GetNoise(cloudWorldX, cloudWorldZ);
     
     // Normalize to [0, 1] range for threshold comparison
-    float normalized = (noiseValue + 1.0f) * 0.5f;
+    float normalizedNoise = (noiseValue + 1.0f) * 0.5f;
     
-    return normalized > Voxel::Config::CLOUD_THRESHOLD;
+    return normalizedNoise > Voxel::Config::CLOUD_THRESHOLD;
 }
 
 void SkySystem::RebuildCloudMesh(int centerX, int centerZ) {
@@ -611,8 +611,8 @@ void SkySystem::RebuildCloudMesh(int centerX, int centerZ) {
             if (!IsCloudOccupied(worldGX, worldGZ)) continue;
             
             // Calculate world position of this cloud block
-            float x = static_cast<float>(worldGX) * blockSize;
-            float z = static_cast<float>(worldGZ) * blockSize;
+            float blockWorldX = static_cast<float>(worldGX) * blockSize;
+            float blockWorldZ = static_cast<float>(worldGZ) * blockSize;
             
             // Check neighbors for face culling
             bool hasTop = true;     // Always render top (no clouds above)
@@ -623,12 +623,12 @@ void SkySystem::RebuildCloudMesh(int centerX, int centerZ) {
             bool hasLeft = !IsCloudOccupied(worldGX - 1, worldGZ);
             
             // Add visible faces with two-tone lighting
-            if (hasTop)    addFace(x, cloudY, z, blockSize, cloudHeight, 0, 1, 0, Voxel::Config::CLOUD_LIGHT_TOP);
-            if (hasBottom) addFace(x, cloudY, z, blockSize, cloudHeight, 0, -1, 0, Voxel::Config::CLOUD_LIGHT_BOTTOM);
-            if (hasFront)  addFace(x, cloudY, z, blockSize, cloudHeight, 0, 0, 1, Voxel::Config::CLOUD_LIGHT_SIDE);
-            if (hasBack)   addFace(x, cloudY, z, blockSize, cloudHeight, 0, 0, -1, Voxel::Config::CLOUD_LIGHT_SIDE);
-            if (hasRight)  addFace(x, cloudY, z, blockSize, cloudHeight, 1, 0, 0, Voxel::Config::CLOUD_LIGHT_SIDE);
-            if (hasLeft)   addFace(x, cloudY, z, blockSize, cloudHeight, -1, 0, 0, Voxel::Config::CLOUD_LIGHT_SIDE);
+            if (hasTop)    addFace(blockWorldX, cloudY, blockWorldZ, blockSize, cloudHeight, 0, 1, 0, Voxel::Config::CLOUD_LIGHT_TOP);
+            if (hasBottom) addFace(blockWorldX, cloudY, blockWorldZ, blockSize, cloudHeight, 0, -1, 0, Voxel::Config::CLOUD_LIGHT_BOTTOM);
+            if (hasFront)  addFace(blockWorldX, cloudY, blockWorldZ, blockSize, cloudHeight, 0, 0, 1, Voxel::Config::CLOUD_LIGHT_SIDE);
+            if (hasBack)   addFace(blockWorldX, cloudY, blockWorldZ, blockSize, cloudHeight, 0, 0, -1, Voxel::Config::CLOUD_LIGHT_SIDE);
+            if (hasRight)  addFace(blockWorldX, cloudY, blockWorldZ, blockSize, cloudHeight, 1, 0, 0, Voxel::Config::CLOUD_LIGHT_SIDE);
+            if (hasLeft)   addFace(blockWorldX, cloudY, blockWorldZ, blockSize, cloudHeight, -1, 0, 0, Voxel::Config::CLOUD_LIGHT_SIDE);
         }
     }
     
@@ -679,13 +679,13 @@ void SkySystem::RenderVolumetricClouds(const Camera& camera, float aspectRatio) 
     
     // Calculate cloud brightness based on time of day
     float brightness = 1.0f;
-    float t = m_TimeOfDay;
-    if (t < 0.2f || t > 0.8f) {
+    float normalizedTime = m_TimeOfDay;
+    if (normalizedTime < 0.2f || normalizedTime > 0.8f) {
         brightness = 0.3f;
-    } else if (t < 0.3f) {
-        brightness = glm::mix(0.3f, 1.0f, (t - 0.2f) / 0.1f);
-    } else if (t > 0.7f) {
-        brightness = glm::mix(1.0f, 0.3f, (t - 0.7f) / 0.1f);
+    } else if (normalizedTime < 0.3f) {
+        brightness = glm::mix(0.3f, 1.0f, (normalizedTime - 0.2f) / 0.1f);
+    } else if (normalizedTime > 0.7f) {
+        brightness = glm::mix(1.0f, 0.3f, (normalizedTime - 0.7f) / 0.1f);
     }
     
     m_VolumetricCloudShader->Bind();
@@ -919,19 +919,19 @@ bool SkySystem::SetupWeather() {
         float height = distHeight(rng);
         float offset = distOffset(rng);
         
-        float x = std::cos(angle) * radius;
-        float z = std::sin(angle) * radius;
+        float particlePosX = std::cos(angle) * radius;
+        float particlePosZ = std::sin(angle) * radius;
         
         // Create a quad for this particle (2 triangles)
         // pos(3) + texCoord(2) + offset(1)
         // Triangle 1
-        vertices.insert(vertices.end(), {x, height, z, 0.0f, 0.0f, offset});  // BL
-        vertices.insert(vertices.end(), {x, height, z, 1.0f, 0.0f, offset});  // BR
-        vertices.insert(vertices.end(), {x, height, z, 1.0f, 1.0f, offset});  // TR
+        vertices.insert(vertices.end(), {particlePosX, height, particlePosZ, 0.0f, 0.0f, offset});  // BL
+        vertices.insert(vertices.end(), {particlePosX, height, particlePosZ, 1.0f, 0.0f, offset});  // BR
+        vertices.insert(vertices.end(), {particlePosX, height, particlePosZ, 1.0f, 1.0f, offset});  // TR
         // Triangle 2
-        vertices.insert(vertices.end(), {x, height, z, 0.0f, 0.0f, offset});  // BL
-        vertices.insert(vertices.end(), {x, height, z, 1.0f, 1.0f, offset});  // TR
-        vertices.insert(vertices.end(), {x, height, z, 0.0f, 1.0f, offset});  // TL
+        vertices.insert(vertices.end(), {particlePosX, height, particlePosZ, 0.0f, 0.0f, offset});  // BL
+        vertices.insert(vertices.end(), {particlePosX, height, particlePosZ, 1.0f, 1.0f, offset});  // TR
+        vertices.insert(vertices.end(), {particlePosX, height, particlePosZ, 0.0f, 1.0f, offset});  // TL
     }
     
     glGenVertexArrays(1, &m_WeatherVAO);
