@@ -1,5 +1,6 @@
 #include "SkySystem.h"
 #include "world/WorldConfig.h"
+#include "world/ChunkManager.h"
 #include "core/scene/Camera.h"
 #include "core/Logger.h"
 #include "core/graphics/Shader.h"
@@ -139,7 +140,7 @@ void SkySystem::Render(const Camera& camera, float aspectRatio) {
     }
 }
 
-void SkySystem::RenderWeather(const Camera& camera, float aspectRatio) {
+void SkySystem::RenderWeather(const Camera& camera, float aspectRatio, Voxel::ChunkManager* chunkManager) {
     if (!m_bWeatherEnabled || !m_WeatherShader || !m_WeatherShader->IsValid()) {
         return;
     }
@@ -175,15 +176,30 @@ void SkySystem::RenderWeather(const Camera& camera, float aspectRatio) {
     glm::mat4 viewProj = proj * view;
     
     glm::vec3 cameraRight = glm::normalize(glm::vec3(view[0][0], view[1][0], view[2][0]));
+    glm::vec3 cameraPos = camera.GetPosition();
     
     m_WeatherShader->Bind();
     m_WeatherShader->SetMat4("u_ViewProj", viewProj);
-    m_WeatherShader->SetVec3("u_CameraPos", camera.GetPosition());
+    m_WeatherShader->SetVec3("u_CameraPos", cameraPos);
     m_WeatherShader->SetVec3("u_CameraRight", cameraRight);
     m_WeatherShader->SetFloat("u_Time", static_cast<float>(glfwGetTime()));
     m_WeatherShader->SetFloat("u_FallSpeed", fallSpeed);
     m_WeatherShader->SetFloat("u_ParticleHeight", particleHeight);
     m_WeatherShader->SetFloat("u_ParticleWidth", particleWidth);
+    
+    // Pass heightmap information to shader (if available)
+    // We'll sample the heightmap at camera position as a baseline
+    float terrainHeightAtCamera = 64.0f;  // Default height
+    if (chunkManager) {
+        int heightSample = chunkManager->GetHeightAt(
+            static_cast<int>(std::floor(cameraPos.x)),
+            static_cast<int>(std::floor(cameraPos.z))
+        );
+        if (heightSample >= 0) {
+            terrainHeightAtCamera = static_cast<float>(heightSample);
+        }
+    }
+    m_WeatherShader->SetFloat("u_TerrainHeight", terrainHeightAtCamera);
     
     texture->Bind(0);
     m_WeatherShader->SetInt("u_Texture", 0);

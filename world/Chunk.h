@@ -69,6 +69,13 @@ public:
     bool HasWaterMesh() const { return m_HasWaterMesh; }
     unsigned int GetWaterIndexCount() const { return m_WaterIndexCount; }
 
+    // Heightmap for weather occlusion (highest solid block at each XZ column)
+    // Returns the Y coordinate of the highest solid block, or -1 if entire column is air
+    int GetHeightAt(int x, int z) const;
+    
+    // Rebuild the heightmap (called after terrain generation or block changes)
+    void RebuildHeightmap();
+
 private:
     // Convert 3D coordinates to 1D array index
     int GetIndex(int x, int y, int z) const;
@@ -99,6 +106,10 @@ private:
     unsigned int m_WaterIBO = 0;
     unsigned int m_WaterIndexCount = 0;
     bool m_HasWaterMesh = false;
+    
+    // Heightmap for weather particles (highest solid block per XZ column)
+    // 16x16 array storing Y coordinates (-1 = no blocks in column)
+    std::array<int, CHUNK_WIDTH * CHUNK_DEPTH> m_Heightmap;
 };
 
 } // namespace Voxel

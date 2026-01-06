@@ -81,6 +81,9 @@ void ChunkManager::LoadChunk(int chunkX, int chunkZ) {
     // Generate terrain
     m_TerrainGenerator.Generate(*chunk);
     
+    // Build heightmap for weather
+    chunk->RebuildHeightmap();
+    
     // Build mesh
     chunk->BuildMesh();
     chunk->SetState(ChunkState::Ready);
@@ -106,6 +109,10 @@ void ChunkManager::LoadChunkAsync(int chunkX, int chunkZ) {
     m_ThreadPool.detach_task([this, rawPtr, chunkX, chunkZ]() {
         // Generate terrain (thread-safe read of config)
         m_TerrainGenerator.Generate(*rawPtr);
+        
+        // Build heightmap for weather
+        rawPtr->RebuildHeightmap();
+        
         rawPtr->SetState(ChunkState::Meshing);
         
         // Build mesh data without OpenGL calls
@@ -333,6 +340,9 @@ void ChunkManager::SetBlock(int worldX, int worldY, int worldZ, BlockID block) {
     // Set block in chunk (convert BlockID to BlockType)
     chunk->SetBlock(localX, worldY, localZ, static_cast<BlockType>(block));
     
+    // Rebuild heightmap for this column
+    chunk->RebuildHeightmap();
+    
     // Rebuild this chunk's mesh
     RebuildChunkMesh(chunkX, chunkZ);
     
@@ -373,6 +383,24 @@ void ChunkManager::RebuildChunkMesh(int chunkX, int chunkZ) {
         
         rawPtr->SetState(ChunkState::MeshPending);
     });
+}
+
+int ChunkManager::GetHeightAt(int worldX, int worldZ) const {
+    // Convert world coords to chunk coords using floor division
+    int chunkX = (worldX >= 0) ? (worldX / CHUNK_WIDTH) : ((worldX + 1) / CHUNK_WIDTH - 1);
+    int chunkZ = (worldZ >= 0) ? (worldZ / CHUNK_DEPTH) : ((worldZ + 1) / CHUNK_DEPTH - 1);
+    
+    // Local coords within chunk
+    int localX = worldX - chunkX * CHUNK_WIDTH;
+    int localZ = worldZ - chunkZ * CHUNK_DEPTH;
+    
+    // Find chunk
+    const Chunk* chunk = GetChunkConst(chunkX, chunkZ);
+    if (!chunk) {
+        return -1;
+    }
+    
+    return chunk->GetHeightAt(localX, localZ);
 }
 
 } // namespace Voxel

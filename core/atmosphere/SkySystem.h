@@ -4,6 +4,11 @@
 #include <memory>
 #include <FastNoiseLite.h>
 
+// Forward declarations
+namespace Voxel {
+class ChunkManager;
+}
+
 namespace Core {
 class Shader;
 class Texture;
@@ -50,8 +55,11 @@ public:
     /**
      * Render weather particles (rain/snow)
      * Should be called AFTER terrain with blending enabled
+     * @param camera The camera for view calculations
+     * @param aspectRatio Screen aspect ratio
+     * @param chunkManager ChunkManager for heightmap queries (nullptr = no occlusion)
      */
-    void RenderWeather(const Camera& camera, float aspectRatio);
+    void RenderWeather(const Camera& camera, float aspectRatio, Voxel::ChunkManager* chunkManager = nullptr);
 
     // =========================================================================
     // TIME OF DAY
