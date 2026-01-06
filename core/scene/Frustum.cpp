@@ -56,18 +56,18 @@ void Frustum::ExtractPlanes(const glm::mat4& viewProj) {
 
 bool Frustum::IsAABBVisible(const glm::vec3& min, const glm::vec3& max) const {
     // Test AABB against all 6 frustum planes
-    // For each plane, find the AABB vertex most in the direction of the plane normal (p-vertex)
-    // If the p-vertex is behind the plane, the AABB is completely outside
+    // For each plane, find the AABB vertex most in the direction of the plane normal (positive vertex)
+    // If the positive vertex is behind the plane, the AABB is completely outside
 
     for (const auto& plane : m_Planes) {
         // Find the "positive vertex" (the corner most in the direction of the plane normal)
-        glm::vec3 pVertex;
-        pVertex.x = (plane.normal.x >= 0.0f) ? max.x : min.x;
-        pVertex.y = (plane.normal.y >= 0.0f) ? max.y : min.y;
-        pVertex.z = (plane.normal.z >= 0.0f) ? max.z : min.z;
+        glm::vec3 positiveVertex;
+        positiveVertex.x = (plane.normal.x >= 0.0f) ? max.x : min.x;
+        positiveVertex.y = (plane.normal.y >= 0.0f) ? max.y : min.y;
+        positiveVertex.z = (plane.normal.z >= 0.0f) ? max.z : min.z;
 
-        // If the p-vertex is behind this plane, the AABB is completely outside
-        if (plane.DistanceToPoint(pVertex) < 0.0f) {
+        // If the positive vertex is behind this plane, the AABB is completely outside
+        if (plane.DistanceToPoint(positiveVertex) < 0.0f) {
             return false;
         }
     }
