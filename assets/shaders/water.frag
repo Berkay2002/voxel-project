@@ -6,6 +6,7 @@ in float AO;
 in float TexIndex;
 in vec3 TintColor;  // Tint color (for consistency)
 in vec3 FragWorldPos;  // World-space position for fog
+in float SkyLight;  // Sky light exposure (0=underground, 1=open sky)
 
 out vec4 FragColor;
 
@@ -28,11 +29,16 @@ void main() {
     vec3 waterColor = texColor.rgb * TintColor;
     
     // Diffuse lighting (Lambertian reflection)
+    // Only apply directional sun light if the block has sky access
     vec3 norm = normalize(Normal);
-    float diff = max(dot(norm, u_LightDir), 0.0);
+    float diff = max(dot(norm, u_LightDir), 0.0) * SkyLight;
+    
+    // For underground water: use fixed cave ambient instead of dynamic sky ambient
+    const float CAVE_AMBIENT = 0.15;
+    float effectiveAmbient = mix(CAVE_AMBIENT, u_AmbientStrength, SkyLight);
     
     // Combine ambient + diffuse, modulated by ambient occlusion
-    float lighting = (u_AmbientStrength + (1.0 - u_AmbientStrength) * diff) * AO;
+    float lighting = (effectiveAmbient + (1.0 - effectiveAmbient) * diff) * AO;
     
     // Add slight brightness boost to water
     lighting = min(lighting * 1.1, 1.0);
@@ -49,4 +55,3 @@ void main() {
     
     FragColor = vec4(finalColor, finalAlpha);
 }
-

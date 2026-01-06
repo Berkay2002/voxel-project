@@ -14,6 +14,7 @@ struct ChunkVertex {
     float ao;           // Ambient occlusion: 0.0 (fully occluded) to 1.0 (fully lit)
     float texIndex;     // Texture array layer index (0=grass_top, 1=dirt, etc.)
     glm::vec3 tintColor; // Tint color multiplied with texture (for grass/foliage biome tinting)
+    float skyLight;     // Sky light exposure: 0.0 (underground) to 1.0 (open sky)
 };
 
 // Result of mesh building
@@ -75,6 +76,13 @@ private:
 
     // Check if a block at position is opaque (for AO calculation)
     bool IsBlockOpaque(const Chunk& chunk, int x, int y, int z);
+
+    // Compute heightmap for sky light calculation (highest solid block per column)
+    void ComputeHeightMap(const Chunk& chunk);
+
+    // Heightmap: highest solid block Y for each (x, z) column
+    // Blocks at Y > heightMap[x][z] have sky access
+    int m_HeightMap[CHUNK_WIDTH][CHUNK_DEPTH];
 };
 
 } // namespace Voxel

@@ -9,6 +9,9 @@ ChunkMeshResult ChunkMeshBuilder::BuildMesh(const Chunk& chunk) {
     result.waterMesh.vertices.reserve(CHUNK_VOLUME);  // Water is typically less common
     result.waterMesh.indices.reserve(CHUNK_VOLUME);
 
+    // Compute heightmap for sky light calculation (once per chunk)
+    ComputeHeightMap(chunk);
+
     // Iterate through all blocks in the chunk
     for (int y = 0; y < CHUNK_HEIGHT; ++y) {
         for (int z = 0; z < CHUNK_DEPTH; ++z) {
@@ -105,12 +108,16 @@ void ChunkMeshBuilder::AddFace(ChunkMesh& mesh,
     // Get tint color for this face (biome-based for grass/foliage)
     glm::vec3 tintColor = GetTintColor(ToBlockID(blockType), face);
 
+    // Calculate sky light: blocks above the highest solid block in this column have sky access
+    // For blocks at or below the heightmap, they're considered underground
+    float skyLight = (y >= m_HeightMap[x][z]) ? 1.0f : 0.0f;
+
     // Current vertex index before adding new vertices
     unsigned int baseIndex = static_cast<unsigned int>(mesh.vertices.size());
 
     // Add 4 vertices for the face
     for (int i = 0; i < 4; ++i) {
-        mesh.vertices.push_back({vertices[i], uvs[i], normal, ao[i], texIndex, tintColor});
+        mesh.vertices.push_back({vertices[i], uvs[i], normal, ao[i], texIndex, tintColor, skyLight});
     }
 
     // Add 2 triangles (6 indices) for the face
@@ -386,6 +393,25 @@ void ChunkMeshBuilder::CalculateFaceAO(const Chunk& chunk, int x, int y, int z,
                 IsBlockOpaque(chunk, x-1, y-1, z-1)
             );
             break;
+    }
+}
+
+void ChunkMeshBuilder::ComputeHeightMap(const Chunk& chunk) {
+    // For each (x, z) column, find the highest non-transparent (solid) block
+    // Blocks above this height have sky access
+    for (int x = 0; x < CHUNK_WIDTH; ++x) {
+        for (int z = 0; z < CHUNK_DEPTH; ++z) {
+            int highestSolid = -1;  // -1 means no solid blocks in column
+            // Scan from top down for efficiency (most columns have surface near top)
+            for (int y = CHUNK_HEIGHT - 1; y >= 0; --y) {
+                BlockType block = chunk.GetBlock(x, y, z);
+                if (IsOpaque(block)) {
+                    highestSolid = y;
+                    break;
+                }
+            }
+            m_HeightMap[x][z] = highestSolid + 1;  // +1 so blocks AT the surface have sky access
+        }
     }
 }
 

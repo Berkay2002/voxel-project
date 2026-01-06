@@ -6,6 +6,7 @@ layout (location = 2) in vec3 aNormal;
 layout (location = 3) in float aAO;
 layout (location = 4) in float aTexIndex;
 layout (location = 5) in vec3 aTintColor;  // Tint color (for consistency with lit shader)
+layout (location = 6) in float aSkyLight;  // Sky light exposure (0=underground, 1=open sky)
 
 out vec2 TexCoord;
 out vec3 Normal;
@@ -13,6 +14,7 @@ out float AO;
 out float TexIndex;
 out vec3 TintColor;
 out vec3 FragWorldPos;  // World-space position for fog calculation
+out float SkyLight;     // Sky light exposure for directional lighting
 
 uniform mat4 u_MVP;
 uniform mat4 u_Model;
@@ -33,5 +35,5 @@ void main() {
     TexIndex = aTexIndex;
     TintColor = aTintColor;
     FragWorldPos = worldPos.xyz;
+    SkyLight = aSkyLight;
 }
-

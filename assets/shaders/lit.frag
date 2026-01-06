@@ -7,6 +7,7 @@ in float TexIndex;
 in vec3 TintColor;        // Biome tint for grass/foliage (white = no tint)
 in vec3 FragWorldPos;     // World-space position for fog
 in vec4 FragPosLightSpace;// Light-space position for shadow mapping
+in float SkyLight;        // Sky light exposure (0=underground, 1=open sky)
 
 out vec4 FragColor;
 
@@ -77,12 +78,13 @@ void main() {
     vec3 tintedColor = texColor.rgb * TintColor;
     
     // Diffuse lighting (Lambertian reflection)
+    // Only apply directional sun light if the block has sky access
     vec3 norm = normalize(Normal);
-    float diff = max(dot(norm, u_LightDir), 0.0);
+    float diff = max(dot(norm, u_LightDir), 0.0) * SkyLight;
     
-    // Shadow calculation (only when enabled - disabled at night)
+    // Shadow calculation (only when enabled and block has sky access)
     float shadow = 1.0;
-    if (u_ShadowsEnabled) {
+    if (u_ShadowsEnabled && SkyLight > 0.0) {
         float rawShadow = CalculateShadow(FragPosLightSpace, norm, u_LightDir);
         // Blend shadow based on strength (smooth fade near dawn/dusk)
         shadow = mix(1.0, rawShadow, u_ShadowStrength);
@@ -97,8 +99,13 @@ void main() {
     }
     
     // Combine ambient + diffuse * shadow, modulated by ambient occlusion
-    // Shadows only affect diffuse lighting, not ambient
-    float lighting = (u_AmbientStrength + (1.0 - u_AmbientStrength) * diff * shadow) * ao;
+    // For underground blocks: use fixed cave ambient (0.15) instead of dynamic sky ambient
+    // This prevents caves from changing brightness with time of day
+    const float CAVE_AMBIENT = 0.15;  // Fixed dim ambient for underground
+    float effectiveAmbient = mix(CAVE_AMBIENT, u_AmbientStrength, SkyLight);
+    
+    // Final lighting: ambient + diffuse (only for sky-exposed blocks)
+    float lighting = (effectiveAmbient + (1.0 - effectiveAmbient) * diff * shadow) * ao;
     
     vec3 litColor = tintedColor * lighting;
     
