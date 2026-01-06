@@ -56,15 +56,15 @@ private:
                  BlockType blockType);
 
     // Get the 4 vertices for a face
-    void GetFaceVertices(Face face, 
+    static void GetFaceVertices(Face face, 
                          const glm::vec3& position,
                          glm::vec3 outVertices[4]);
 
     // Get UV coordinates for a face (full 0-1 range for now)
-    void GetFaceUVs(glm::vec2 outUVs[4]);
+    static void GetFaceUVs(glm::vec2 outUVs[4]);
 
     // Get normal vector for a face
-    glm::vec3 GetFaceNormal(Face face);
+    static glm::vec3 GetFaceNormal(Face face);
 
     // Calculate ambient occlusion for each vertex of a face
     // Returns 4 AO values (one per vertex), range 0.0-1.0
@@ -72,10 +72,10 @@ private:
                          Face face, float outAO[4]);
 
     // Calculate AO for a single vertex based on 3 neighbor checks
-    float CalculateVertexAO(bool side1, bool side2, bool corner);
+    static float CalculateVertexAO(bool side1, bool side2, bool corner);
 
     // Check if a block at position is opaque (for AO calculation)
-    bool IsBlockOpaque(const Chunk& chunk, int x, int y, int z);
+    static bool IsBlockOpaque(const Chunk& chunk, int x, int y, int z);
 
     // Compute heightmap for sky light calculation (highest solid block per column)
     void ComputeHeightMap(const Chunk& chunk);
