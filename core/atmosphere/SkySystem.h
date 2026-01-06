@@ -86,18 +86,18 @@ public:
     // FEATURE TOGGLES
     // =========================================================================
 
-    void SetCloudsEnabled(bool enabled) { m_CloudsEnabled = enabled; }
-    void SetCelestialsEnabled(bool enabled) { m_CelestialsEnabled = enabled; }
-    void SetWeatherEnabled(bool enabled) { m_WeatherEnabled = enabled; }
+    void SetCloudsEnabled(bool enabled) { m_bCloudsEnabled = enabled; }
+    void SetCelestialsEnabled(bool enabled) { m_bCelestialsEnabled = enabled; }
+    void SetWeatherEnabled(bool enabled) { m_bWeatherEnabled = enabled; }
 
-    [[nodiscard]] bool IsCloudsEnabled() const { return m_CloudsEnabled; }
-    [[nodiscard]] bool IsCelestialsEnabled() const { return m_CelestialsEnabled; }
-    [[nodiscard]] bool IsWeatherEnabled() const { return m_WeatherEnabled; }
+    [[nodiscard]] bool IsCloudsEnabled() const { return m_bCloudsEnabled; }
+    [[nodiscard]] bool IsCelestialsEnabled() const { return m_bCelestialsEnabled; }
+    [[nodiscard]] bool IsWeatherEnabled() const { return m_bWeatherEnabled; }
 
     /**
      * Toggle weather state (called from key press)
      */
-    void ToggleWeather() { m_WeatherEnabled = !m_WeatherEnabled; }
+    void ToggleWeather() { m_bWeatherEnabled = !m_bWeatherEnabled; }
 
     // =========================================================================
     // WEATHER TYPE
@@ -119,7 +119,7 @@ private:
     // CLOUD LAYER (Phase 14A) - Fast 2D mode
     // =========================================================================
     
-    bool m_CloudsEnabled = true;
+    bool m_bCloudsEnabled = true;
     float m_CloudOffset = 0.0f;  // UV offset for drift animation
     
     std::unique_ptr<Shader> m_CloudShader;
@@ -161,7 +161,7 @@ private:
     // CELESTIALS - SUN & MOON (Phase 14B)
     // =========================================================================
     
-    bool m_CelestialsEnabled = true;
+    bool m_bCelestialsEnabled = true;
     
     std::unique_ptr<Shader> m_CelestialShader;
     std::unique_ptr<Texture> m_SunTexture;
@@ -182,7 +182,7 @@ private:
     // WEATHER SYSTEM (Phase 14D)
     // =========================================================================
     
-    bool m_WeatherEnabled = false;  // Start disabled
+    bool m_bWeatherEnabled = false;  // Start disabled
     WeatherType m_WeatherType = WeatherType::Rain;
     
     std::unique_ptr<Shader> m_WeatherShader;

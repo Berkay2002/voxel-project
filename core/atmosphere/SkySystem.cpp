@@ -117,12 +117,12 @@ void SkySystem::Render(const Camera& camera, float aspectRatio) {
     (void)viewProj;  // Reserved for future use
     
     // Render celestials first (behind clouds)
-    if (m_CelestialsEnabled) {
+    if (m_bCelestialsEnabled) {
         RenderCelestials(camera, aspectRatio);
     }
     
     // Render clouds based on CloudMode setting
-    if (m_CloudsEnabled) {
+    if (m_bCloudsEnabled) {
         switch (Voxel::Config::CLOUD_MODE) {
             case Voxel::Config::CloudMode::OFF:
                 // Clouds disabled
@@ -140,7 +140,7 @@ void SkySystem::Render(const Camera& camera, float aspectRatio) {
 }
 
 void SkySystem::RenderWeather(const Camera& camera, float aspectRatio) {
-    if (!m_WeatherEnabled || !m_WeatherShader || !m_WeatherShader->IsValid()) {
+    if (!m_bWeatherEnabled || !m_WeatherShader || !m_WeatherShader->IsValid()) {
         return;
     }
     

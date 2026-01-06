@@ -70,7 +70,7 @@ private:
   // Game state
   GameState m_CurrentState = GameState::TITLE_SCREEN;
   float m_LoadingProgress = 0.0f;
-  bool m_WorldSetupStarted = false;
+  bool m_bWorldSetupStarted = false;
 
   std::unique_ptr<Window> m_Window;
 
@@ -116,8 +116,8 @@ private:
   // Input state
   float m_LastX = 400.0f;
   float m_LastY = 300.0f;
-  bool m_FirstMouse = true;
-  bool m_CursorCaptured = false;
+  bool m_bFirstMouse = true;
+  bool m_bCursorCaptured = false;
 };
 
 } // namespace Core

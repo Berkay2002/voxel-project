@@ -80,8 +80,8 @@ public:
     void UnbindAOTexture(int slot);
 
     // Toggle
-    void SetEnabled(bool enabled) { m_Enabled = enabled; }
-    [[nodiscard]] bool IsEnabled() const { return m_Enabled; }
+    void SetEnabled(bool enabled) { m_bEnabled = enabled; }
+    [[nodiscard]] bool IsEnabled() const { return m_bEnabled; }
 
     // Accessors for viewport restore
     [[nodiscard]] int GetWidth() const { return m_Width; }
@@ -127,7 +127,7 @@ private:
     int m_SSAOWidth = 0;   // Half of m_Width
     int m_SSAOHeight = 0;  // Half of m_Height
 
-    bool m_Enabled = true;
+    bool m_bEnabled = true;
 };
 
 } // namespace Core

@@ -299,10 +299,10 @@ void Application::ProcessInput(float deltaTime) {
   if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS) {
     if (!mKeyWasPressed) {
       mKeyWasPressed = true;
-      m_CursorCaptured = !m_CursorCaptured;
-      if (m_CursorCaptured) {
+      m_bCursorCaptured = !m_bCursorCaptured;
+      if (m_bCursorCaptured) {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        m_FirstMouse = true;
+        m_bFirstMouse = true;
         LOG_INFO("Mouse captured - use M to release");
       } else {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
@@ -381,14 +381,14 @@ void Application::ProcessInput(float deltaTime) {
                             sprint);
 
   // Mouse input (only when cursor is captured)
-  if (m_CursorCaptured) {
+  if (m_bCursorCaptured) {
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
 
-    if (m_FirstMouse) {
+    if (m_bFirstMouse) {
       m_LastX = static_cast<float>(xpos);
       m_LastY = static_cast<float>(ypos);
-      m_FirstMouse = false;
+      m_bFirstMouse = false;
     }
 
     float xOffset = static_cast<float>(xpos) - m_LastX;
@@ -780,7 +780,7 @@ void Application::OnMouseButton(int button, int action) {
   }
 
   // In gameplay mode: only process when cursor is captured
-  if (m_CurrentState != GameState::PLAYING || !m_CursorCaptured) {
+  if (m_CurrentState != GameState::PLAYING || !m_bCursorCaptured) {
     return;
   }
 
@@ -955,8 +955,8 @@ void Application::RenderSettingsScreen() {
 
 void Application::UpdateLoadingScreen(float deltaTime) {
   // Start world setup if not already started
-  if (!m_WorldSetupStarted) {
-    m_WorldSetupStarted = true;
+  if (!m_bWorldSetupStarted) {
+    m_bWorldSetupStarted = true;
     m_LoadingProgress = 0.0f;
 
     if (m_LoadingScreen) {
@@ -1010,19 +1010,19 @@ void Application::TransitionToState(GameState newState) {
   case GameState::TITLE_SCREEN:
     LOG_INFO("Transitioning to Title Screen");
     glfwSetInputMode(m_Window->GetHandle(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    m_CursorCaptured = false;
+    m_bCursorCaptured = false;
     break;
 
   case GameState::SETTINGS:
     LOG_INFO("Transitioning to Settings Screen");
     glfwSetInputMode(m_Window->GetHandle(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    m_CursorCaptured = false;
+    m_bCursorCaptured = false;
     break;
 
   case GameState::LOADING:
     LOG_INFO("Transitioning to Loading Screen");
     glfwSetInputMode(m_Window->GetHandle(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    m_WorldSetupStarted = false;
+    m_bWorldSetupStarted = false;
     m_LoadingProgress = 0.0f;
     break;
 
