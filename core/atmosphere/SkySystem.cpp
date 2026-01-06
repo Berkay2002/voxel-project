@@ -1,4 +1,4 @@
-#include "core/SkyRenderer.h"
+#include "SkySystem.h"
 #include "world/WorldConfig.h"
 #include "core/scene/Camera.h"
 #include "core/Logger.h"

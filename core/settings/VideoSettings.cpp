@@ -1,4 +1,4 @@
-#include "core/DisplayConfig.h"
+#include "VideoSettings.h"
 
 namespace Core {
 

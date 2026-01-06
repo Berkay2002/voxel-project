@@ -7,7 +7,7 @@
 #include "core/rendering/ShadowMap.h"
 #include "core/graphics/TextureArray.h"
 #include "core/rendering/TextureManager.h"
-#include "core/Window.h"
+#include "core/window/Window.h"
 
 // UI system
 #include "ui/LoadingScreen.h"
@@ -18,7 +18,7 @@
 // Voxel system
 #include "world/BlockRegistry.h"
 #include "world/ChunkManager.h"
-#include "core/SkyRenderer.h"
+#include "core/atmosphere/SkySystem.h"
 #include "world/SpaghettiCaveCarver.h"
 
 #include <glad/gl.h>

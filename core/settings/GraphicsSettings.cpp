@@ -1,4 +1,4 @@
-#include "core/RenderConfig.h"
+#include "GraphicsSettings.h"
 
 namespace Core {
 

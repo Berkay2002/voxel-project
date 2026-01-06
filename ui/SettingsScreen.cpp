@@ -1,9 +1,9 @@
 #include "ui/SettingsScreen.h"
-#include "core/DisplayConfig.h"
+#include "core/settings/VideoSettings.h"
 #include "core/Logger.h"
-#include "core/RenderConfig.h"
+#include "core/settings/GraphicsSettings.h"
 #include "core/graphics/Texture.h"
-#include "core/Window.h"
+#include "core/window/Window.h"
 #include "ui/UIRenderer.h"
 #include "world/GameConfig.h"
 

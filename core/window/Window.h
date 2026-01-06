@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/DisplayConfig.h"
+#include "../settings/VideoSettings.h"
 #include <functional>
 #include <string>
 

@@ -91,7 +91,6 @@ FetchContent_MakeAvailable(json)
 # ============================================================================
 add_executable(${PROJECT_NAME}
     main.cpp
-    core/Window.cpp
     core/Engine.cpp
     core/graphics/Shader.cpp
     core/graphics/VertexBuffer.cpp
@@ -105,9 +104,10 @@ add_executable(${PROJECT_NAME}
     core/rendering/ShadowMap.cpp
     core/rendering/SSAO.cpp
     core/rendering/TextureManager.cpp
-    core/DisplayConfig.cpp
-    core/RenderConfig.cpp
-    core/SkyRenderer.cpp
+    core/window/Window.cpp
+    core/settings/VideoSettings.cpp
+    core/settings/GraphicsSettings.cpp
+    core/atmosphere/SkySystem.cpp
     world/Chunk.cpp
     world/ChunkMeshBuilder.cpp
     world/TerrainGenerator.cpp
