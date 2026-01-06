@@ -261,50 +261,11 @@ ChunkMeshData Chunk::GenerateMeshData() const {
     data.chunkZ = m_ChunkZ;
     data.valid = true;
     
-    // Convert opaque mesh ChunkVertex array to flat float array for GPU upload
-    // Layout: position (3) + uv (2) + normal (3) + ao (1) + texIndex (1) + tintColor (3) + skyLight (1) = 14 floats per vertex
-    if (!result.opaqueMesh.IsEmpty()) {
-        data.opaqueVertices.reserve(result.opaqueMesh.vertices.size() * 14);
-        for (const auto& vertex : result.opaqueMesh.vertices) {
-            data.opaqueVertices.push_back(vertex.position.x);
-            data.opaqueVertices.push_back(vertex.position.y);
-            data.opaqueVertices.push_back(vertex.position.z);
-            data.opaqueVertices.push_back(vertex.uv.x);
-            data.opaqueVertices.push_back(vertex.uv.y);
-            data.opaqueVertices.push_back(vertex.normal.x);
-            data.opaqueVertices.push_back(vertex.normal.y);
-            data.opaqueVertices.push_back(vertex.normal.z);
-            data.opaqueVertices.push_back(vertex.ao);
-            data.opaqueVertices.push_back(vertex.texIndex);
-            data.opaqueVertices.push_back(vertex.tintColor.r);
-            data.opaqueVertices.push_back(vertex.tintColor.g);
-            data.opaqueVertices.push_back(vertex.tintColor.b);
-            data.opaqueVertices.push_back(vertex.skyLight);
-        }
-        data.opaqueIndices = std::move(result.opaqueMesh.indices);
-    }
-    
-    // Convert water mesh to flat float array
-    if (!result.waterMesh.IsEmpty()) {
-        data.waterVertices.reserve(result.waterMesh.vertices.size() * 14);
-        for (const auto& vertex : result.waterMesh.vertices) {
-            data.waterVertices.push_back(vertex.position.x);
-            data.waterVertices.push_back(vertex.position.y);
-            data.waterVertices.push_back(vertex.position.z);
-            data.waterVertices.push_back(vertex.uv.x);
-            data.waterVertices.push_back(vertex.uv.y);
-            data.waterVertices.push_back(vertex.normal.x);
-            data.waterVertices.push_back(vertex.normal.y);
-            data.waterVertices.push_back(vertex.normal.z);
-            data.waterVertices.push_back(vertex.ao);
-            data.waterVertices.push_back(vertex.texIndex);
-            data.waterVertices.push_back(vertex.tintColor.r);
-            data.waterVertices.push_back(vertex.tintColor.g);
-            data.waterVertices.push_back(vertex.tintColor.b);
-            data.waterVertices.push_back(vertex.skyLight);
-        }
-        data.waterIndices = std::move(result.waterMesh.indices);
-    }
+    // Move mesh data directly (no serialization overhead)
+    data.opaqueVertices = std::move(result.opaqueMesh.vertices);
+    data.opaqueIndices = std::move(result.opaqueMesh.indices);
+    data.waterVertices = std::move(result.waterMesh.vertices);
+    data.waterIndices = std::move(result.waterMesh.indices);
     
     return data;
 }
@@ -316,9 +277,6 @@ void Chunk::UploadMeshFromData(const ChunkMeshData& data) {
         CleanupMesh();
         return;
     }
-    
-    // Vertex layout: position (3) + uv (2) + normal (3) + ao (1) + texIndex (1) + tintColor (3) + skyLight (1) = 14 floats = 56 bytes stride
-    constexpr GLsizei stride = 14 * sizeof(float);
     
     // Upload opaque mesh
     if (data.opaqueVertices.empty()) {
@@ -341,39 +299,46 @@ void Chunk::UploadMeshFromData(const ChunkMeshData& data) {
         
         glBindVertexArray(m_VAO);
         
-        // Upload vertex data (flat float array)
+        // Upload vertex data (structured ChunkVertex array)
         glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
         glBufferData(GL_ARRAY_BUFFER, 
-                     data.opaqueVertices.size() * sizeof(float),
+                     data.opaqueVertices.size() * sizeof(ChunkVertex),
                      data.opaqueVertices.data(), 
                      GL_STATIC_DRAW);
         
         // Position attribute (location 0)
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), 
+                              (void*)offsetof(ChunkVertex, position));
         glEnableVertexAttribArray(0);
         
         // UV attribute (location 1)
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), 
+                              (void*)offsetof(ChunkVertex, uv));
         glEnableVertexAttribArray(1);
         
         // Normal attribute (location 2)
-        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride, (void*)(5 * sizeof(float)));
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), 
+                              (void*)offsetof(ChunkVertex, normal));
         glEnableVertexAttribArray(2);
         
         // AO attribute (location 3)
-        glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, stride, (void*)(8 * sizeof(float)));
+        glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), 
+                              (void*)offsetof(ChunkVertex, ao));
         glEnableVertexAttribArray(3);
         
         // TexIndex attribute (location 4)
-        glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, stride, (void*)(9 * sizeof(float)));
+        glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), 
+                              (void*)offsetof(ChunkVertex, texIndex));
         glEnableVertexAttribArray(4);
         
         // TintColor attribute (location 5)
-        glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, stride, (void*)(10 * sizeof(float)));
+        glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), 
+                              (void*)offsetof(ChunkVertex, tintColor));
         glEnableVertexAttribArray(5);
         
         // SkyLight attribute (location 6)
-        glVertexAttribPointer(6, 1, GL_FLOAT, GL_FALSE, stride, (void*)(13 * sizeof(float)));
+        glVertexAttribPointer(6, 1, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), 
+                              (void*)offsetof(ChunkVertex, skyLight));
         glEnableVertexAttribArray(6);
         
         // Upload index data
@@ -410,39 +375,46 @@ void Chunk::UploadMeshFromData(const ChunkMeshData& data) {
         
         glBindVertexArray(m_WaterVAO);
         
-        // Upload vertex data (flat float array)
+        // Upload vertex data (structured ChunkVertex array)
         glBindBuffer(GL_ARRAY_BUFFER, m_WaterVBO);
         glBufferData(GL_ARRAY_BUFFER, 
-                     data.waterVertices.size() * sizeof(float),
+                     data.waterVertices.size() * sizeof(ChunkVertex),
                      data.waterVertices.data(), 
                      GL_STATIC_DRAW);
         
         // Position attribute (location 0)
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), 
+                              (void*)offsetof(ChunkVertex, position));
         glEnableVertexAttribArray(0);
         
         // UV attribute (location 1)
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), 
+                              (void*)offsetof(ChunkVertex, uv));
         glEnableVertexAttribArray(1);
         
         // Normal attribute (location 2)
-        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride, (void*)(5 * sizeof(float)));
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), 
+                              (void*)offsetof(ChunkVertex, normal));
         glEnableVertexAttribArray(2);
         
         // AO attribute (location 3)
-        glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, stride, (void*)(8 * sizeof(float)));
+        glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), 
+                              (void*)offsetof(ChunkVertex, ao));
         glEnableVertexAttribArray(3);
         
         // TexIndex attribute (location 4)
-        glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, stride, (void*)(9 * sizeof(float)));
+        glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), 
+                              (void*)offsetof(ChunkVertex, texIndex));
         glEnableVertexAttribArray(4);
         
         // TintColor attribute (location 5)
-        glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, stride, (void*)(10 * sizeof(float)));
+        glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), 
+                              (void*)offsetof(ChunkVertex, tintColor));
         glEnableVertexAttribArray(5);
         
         // SkyLight attribute (location 6)
-        glVertexAttribPointer(6, 1, GL_FLOAT, GL_FALSE, stride, (void*)(13 * sizeof(float)));
+        glVertexAttribPointer(6, 1, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), 
+                              (void*)offsetof(ChunkVertex, skyLight));
         glEnableVertexAttribArray(6);
         
         // Upload index data
