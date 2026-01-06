@@ -13,70 +13,45 @@ This plan reorganizes `core/` to follow AAA game engine conventions (Unreal, id 
 
 ---
 
-## Phase 1: File Organization
+## ✅ Phase 1: File Organization (COMPLETED 2026-01-06)
 
-### Current Structure (Flat)
+### Commits:
 
-```
-core/
-├── BlockOutline.cpp/h
-├── Camera.cpp/h
-├── DisplayConfig.cpp/h
-├── Engine.cpp/h
-├── Frustum.cpp/h
-├── GameState.h
-├── IndexBuffer.cpp/h
-├── Logger.h
-├── Ray.h
-├── RenderConfig.cpp/h
-├── Shader.cpp/h
-├── ShadowMap.cpp/h
-├── SkyRenderer.cpp/h
-├── SSAO.cpp/h
-├── Texture.cpp/h
-├── TextureArray.cpp/h
-├── TextureRegistry.cpp/h
-├── VertexArray.cpp/h
-├── VertexBuffer.cpp/h
-└── Window.cpp/h
-```
+1. `9904386` - `core/graphics/` (Shader, Texture, TextureArray, VertexArray, VertexBuffer, IndexBuffer)
+2. `ce7f607` - `core/rendering/` (ShadowMap, SSAO, SelectionRenderer, TextureManager)
+3. `99071d2` - `core/scene/` (Camera, Frustum, Ray)
+4. `896ec8f` - `core/atmosphere/`, `core/window/`, `core/settings/`
 
-### Proposed Structure (Grouped by Responsibility)
+### Current Structure (After Phase 1)
 
 ```
 core/
-├── Application.cpp/h              # Renamed from Engine
-├── GameState.h                    # Application states enum
-├── Logger.h                       # Logging utilities
-│
-├── graphics/                      # Low-level GPU abstractions
+├── atmosphere/
+│   └── SkySystem.cpp/h        # File renamed (class still SkyRenderer)
+├── graphics/
 │   ├── Shader.cpp/h
 │   ├── Texture.cpp/h
 │   ├── TextureArray.cpp/h
 │   ├── VertexArray.cpp/h
 │   ├── VertexBuffer.cpp/h
 │   └── IndexBuffer.cpp/h
-│
-├── rendering/                     # High-level rendering systems
-│   ├── ShadowMap.cpp/h
+├── rendering/
+│   ├── SelectionRenderer.cpp/h  # ✓ Fully renamed from BlockOutline
 │   ├── SSAO.cpp/h
-│   ├── SelectionRenderer.cpp/h   # Renamed from BlockOutline
-│   └── TextureManager.cpp/h      # Renamed from TextureRegistry
-│
-├── scene/                         # Camera, frustum, spatial
+│   ├── ShadowMap.cpp/h
+│   └── TextureManager.cpp/h     # ✓ Fully renamed from TextureRegistry
+├── scene/
 │   ├── Camera.cpp/h
 │   ├── Frustum.cpp/h
 │   └── Ray.h
-│
-├── atmosphere/                    # Sky, weather, celestials
-│   └── SkySystem.cpp/h           # Renamed from SkyRenderer (kept as single file)
-│
-├── window/                        # Platform/windowing
+├── settings/
+│   ├── VideoSettings.cpp/h      # File renamed (class still DisplayConfig)
+│   └── GraphicsSettings.cpp/h   # File renamed (class still RenderConfig)
+├── window/
 │   └── Window.cpp/h
-│
-└── settings/                      # Configuration
-    ├── VideoSettings.cpp/h       # Renamed from DisplayConfig
-    └── GraphicsSettings.cpp/h    # Renamed from RenderConfig
+├── Engine.cpp/h                 # To be renamed Application in Phase 2
+├── GameState.h
+└── Logger.h
 ```
 
 ### Namespace Strategy
@@ -87,34 +62,61 @@ core/
 
 ---
 
-## Phase 2: File & Class Renaming
+## 🔜 Phase 2: Internal Class Renaming (NEXT)
 
-| Current Name            | New Name                  | New Location       |
-| ----------------------- | ------------------------- | ------------------ |
-| `Engine.h/cpp`          | `Application.h/cpp`       | `core/` (root)     |
-| `SkyRenderer.h/cpp`     | `SkySystem.h/cpp`         | `core/atmosphere/` |
-| `BlockOutline.h/cpp`    | `SelectionRenderer.h/cpp` | `core/rendering/`  |
-| `TextureRegistry.h/cpp` | `TextureManager.h/cpp`    | `core/rendering/`  |
-| `DisplayConfig.h/cpp`   | `VideoSettings.h/cpp`     | `core/settings/`   |
-| `RenderConfig.h/cpp`    | `GraphicsSettings.h/cpp`  | `core/settings/`   |
-| `Shader.h/cpp`          | (keep name)               | `core/graphics/`   |
-| `Texture.h/cpp`         | (keep name)               | `core/graphics/`   |
-| `TextureArray.h/cpp`    | (keep name)               | `core/graphics/`   |
-| `VertexArray.h/cpp`     | (keep name)               | `core/graphics/`   |
-| `VertexBuffer.h/cpp`    | (keep name)               | `core/graphics/`   |
-| `IndexBuffer.h/cpp`     | (keep name)               | `core/graphics/`   |
-| `Camera.h/cpp`          | (keep name)               | `core/scene/`      |
-| `Frustum.h/cpp`         | (keep name)               | `core/scene/`      |
-| `Ray.h`                 | (keep name)               | `core/scene/`      |
-| `ShadowMap.h/cpp`       | (keep name)               | `core/rendering/`  |
-| `SSAO.h/cpp`            | (keep name)               | `core/rendering/`  |
-| `Window.h/cpp`          | (keep name)               | `core/window/`     |
-| `GameState.h`           | (keep name)               | `core/` (root)     |
-| `Logger.h`              | (keep name)               | `core/` (root)     |
+Files were moved/renamed in Phase 1, but some internal class names still need updating.
+
+### Class Renaming Required
+
+| File                                     | Current Class       | Target Class       | Status                |
+| ---------------------------------------- | ------------------- | ------------------ | --------------------- |
+| `core/Engine.cpp/h`                      | `Engine`            | `Application`      | Pending + file rename |
+| `core/atmosphere/SkySystem.cpp/h`        | `SkyRenderer`       | `SkySystem`        | Pending               |
+| `core/settings/VideoSettings.cpp/h`      | `DisplayConfig`     | `VideoSettings`    | Pending               |
+| `core/settings/GraphicsSettings.cpp/h`   | `RenderConfig`      | `GraphicsSettings` | Pending               |
+| `core/rendering/SelectionRenderer.cpp/h` | `SelectionRenderer` | -                  | ✅ Complete           |
+| `core/rendering/TextureManager.cpp/h`    | `TextureManager`    | -                  | ✅ Complete           |
+
+### Implementation Steps
+
+#### Step 2.1: Engine → Application
+
+```bash
+git mv core/Engine.cpp core/Application.cpp
+git mv core/Engine.h core/Application.h
+```
+
+Then inside files:
+
+- Replace `class Engine` → `class Application`
+- Replace all references across codebase
+
+#### Step 2.2: SkyRenderer → SkySystem
+
+Inside `core/atmosphere/SkySystem.cpp/h`:
+
+- Replace `class SkyRenderer` → `class SkySystem`
+- Replace all constructor/destructor names
+- Update forward declarations in Engine.h/Application.h
+- Update usages in Engine.cpp/Application.cpp
+
+#### Step 2.3: DisplayConfig → VideoSettings
+
+Inside `core/settings/VideoSettings.cpp/h`:
+
+- Replace `class DisplayConfig` → `class VideoSettings`
+- Update usages in Window.cpp/h, SettingsScreen.cpp
+
+#### Step 2.4: RenderConfig → GraphicsSettings
+
+Inside `core/settings/GraphicsSettings.cpp/h`:
+
+- Replace `class RenderConfig` → `class GraphicsSettings`
+- Update usages in SettingsScreen.cpp
 
 ---
 
-## Phase 3: Code Naming Conventions
+## 🔜 Phase 3: Code Naming Conventions
 
 ### 3.1 Boolean Naming (`m_b` prefix)
 
@@ -128,9 +130,10 @@ bool m_WeatherEnabled;       →     bool m_bWeatherEnabled;
 bool m_FirstMouse;           →     bool m_bFirstMouse;
 bool m_CursorCaptured;       →     bool m_bCursorCaptured;
 bool m_WorldSetupStarted;    →     bool m_bWorldSetupStarted;
+bool m_Enabled;              →     bool m_bEnabled;  // In SSAO
 ```
 
-### 3.2 Constants Header
+### 3.2 Constants Header (Optional)
 
 Create `core/Constants.h`:
 
@@ -158,105 +161,6 @@ constexpr int kDefaultWindowHeight = 720;
 
 } // namespace Core
 ```
-
-### 3.3 Shader Member Naming
-
-```cpp
-// Before (generic)                    // After (purpose-first)
-std::unique_ptr<Shader> m_Shader;      std::unique_ptr<Shader> m_pLitOpaqueShader;
-std::unique_ptr<Shader> m_WaterShader; std::unique_ptr<Shader> m_pWaterShader;
-std::unique_ptr<Shader> m_UIShader;    std::unique_ptr<Shader> m_pUIShader;
-```
-
-> [!NOTE]
-> The `p` prefix for pointers is optional. Many modern codebases skip it since `unique_ptr` is obviously a pointer. We can discuss during implementation.
-
----
-
-## Implementation Steps
-
-### Step 1: Create Directory Structure
-
-```bash
-mkdir -p core/{graphics,rendering,scene,atmosphere,window,settings}
-```
-
-### Step 2: Move Files (preserve git history)
-
-```bash
-# Graphics
-git mv core/Shader.cpp core/graphics/
-git mv core/Shader.h core/graphics/
-git mv core/Texture.cpp core/graphics/
-git mv core/Texture.h core/graphics/
-git mv core/TextureArray.cpp core/graphics/
-git mv core/TextureArray.h core/graphics/
-git mv core/VertexArray.cpp core/graphics/
-git mv core/VertexArray.h core/graphics/
-git mv core/VertexBuffer.cpp core/graphics/
-git mv core/VertexBuffer.h core/graphics/
-git mv core/IndexBuffer.cpp core/graphics/
-git mv core/IndexBuffer.h core/graphics/
-
-# Rendering
-git mv core/ShadowMap.cpp core/rendering/
-git mv core/ShadowMap.h core/rendering/
-git mv core/SSAO.cpp core/rendering/
-git mv core/SSAO.h core/rendering/
-git mv core/BlockOutline.cpp core/rendering/SelectionRenderer.cpp
-git mv core/BlockOutline.h core/rendering/SelectionRenderer.h
-git mv core/TextureRegistry.cpp core/rendering/TextureManager.cpp
-git mv core/TextureRegistry.h core/rendering/TextureManager.h
-
-# Scene
-git mv core/Camera.cpp core/scene/
-git mv core/Camera.h core/scene/
-git mv core/Frustum.cpp core/scene/
-git mv core/Frustum.h core/scene/
-git mv core/Ray.h core/scene/
-
-# Atmosphere
-git mv core/SkyRenderer.cpp core/atmosphere/SkySystem.cpp
-git mv core/SkyRenderer.h core/atmosphere/SkySystem.h
-
-# Window
-git mv core/Window.cpp core/window/
-git mv core/Window.h core/window/
-
-# Settings
-git mv core/DisplayConfig.cpp core/settings/VideoSettings.cpp
-git mv core/DisplayConfig.h core/settings/VideoSettings.h
-git mv core/RenderConfig.cpp core/settings/GraphicsSettings.cpp
-git mv core/RenderConfig.h core/settings/GraphicsSettings.h
-
-# Rename Engine → Application (stays in root)
-git mv core/Engine.cpp core/Application.cpp
-git mv core/Engine.h core/Application.h
-```
-
-### Step 3: Update CMakeLists.txt
-
-Update source file paths to reflect new structure.
-
-### Step 4: Update All #include Paths
-
-Search and replace all includes across the codebase.
-
-### Step 5: Rename Classes Inside Files
-
-Update class names to match new file names (Engine → Application, etc.).
-
-### Step 6: Apply Boolean Prefix
-
-Add `m_b` prefix to all boolean members.
-
-### Step 7: Create Constants.h
-
-Extract magic numbers into centralized constants file.
-
-### Step 8: Build & Test
-
-Verify everything compiles and runs correctly.
 
 ---
 
@@ -288,3 +192,13 @@ cmake --build build -j$(nproc)
 
 - [ ] Update `GEMINI.md` with new file structure
 - [ ] Update `.agent/architecture_reference.md` if needed
+
+---
+
+## Progress Summary
+
+| Phase | Description             | Status      | Date       |
+| ----- | ----------------------- | ----------- | ---------- |
+| 1     | File Organization       | ✅ Complete | 2026-01-06 |
+| 2     | Internal Class Renaming | 🔜 Next     | -          |
+| 3     | Code Naming Conventions | Pending     | -          |
