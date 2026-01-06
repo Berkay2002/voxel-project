@@ -1,12 +1,12 @@
 #include "core/Engine.h"
-#include "core/BlockOutline.h"
+#include "core/rendering/SelectionRenderer.h"
 #include "core/Camera.h"
 #include "core/Logger.h"
-#include "core/SSAO.h"
+#include "core/rendering/SSAO.h"
 #include "core/graphics/Shader.h"
-#include "core/ShadowMap.h"
+#include "core/rendering/ShadowMap.h"
 #include "core/graphics/TextureArray.h"
-#include "core/TextureRegistry.h"
+#include "core/rendering/TextureManager.h"
 #include "core/Window.h"
 
 // UI system
@@ -196,8 +196,8 @@ void Engine::SetupWorld() {
   SetupCrosshair();
 
   // Setup block outline
-  m_BlockOutline = std::make_unique<BlockOutline>();
-  m_BlockOutline->Setup();
+  m_SelectionRenderer = std::make_unique<SelectionRenderer>();
+  m_SelectionRenderer->Setup();
 
   // =========================================================================
   // PHASE 11: Data-driven texture and block loading via registries
@@ -228,10 +228,10 @@ void Engine::SetupWorld() {
       "emerald_ore"  // Layer 18
   };
 
-  // Load textures via TextureRegistry
-  TextureRegistry &texRegistry = TextureRegistry::Instance();
+  // Load textures via TextureManager
+  TextureManager &texRegistry = TextureManager::Instance();
   if (!texRegistry.LoadTextures(textureList, "assets/textures/blocks/")) {
-    LOG_ERROR("Failed to load textures via TextureRegistry");
+    LOG_ERROR("Failed to load textures via TextureManager");
     return;
   }
 
@@ -596,7 +596,7 @@ void Engine::Render() {
   glClearColor(skyColor.r, skyColor.g, skyColor.b, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  TextureRegistry &texRegistry = TextureRegistry::Instance();
+  TextureManager &texRegistry = TextureManager::Instance();
   if (m_Shader && m_Shader->IsValid() && texRegistry.IsLoaded() && m_Camera &&
       m_ChunkManager) {
     // Calculate aspect ratio
@@ -685,11 +685,11 @@ void Engine::Render() {
 
     // === PASS 1.5: Render block outline (if targeting a block) ===
     if (m_TargetedBlock.hit && m_OutlineShader && m_OutlineShader->IsValid() &&
-        m_BlockOutline) {
+        m_SelectionRenderer) {
       glm::mat4 view = m_Camera->GetViewMatrix();
       glm::mat4 proj = m_Camera->GetProjectionMatrix(aspectRatio);
       glm::mat4 viewProj = proj * view;
-      m_BlockOutline->Render(m_TargetedBlock.blockPos, *m_OutlineShader,
+      m_SelectionRenderer->Render(m_TargetedBlock.blockPos, *m_OutlineShader,
                              viewProj);
     }
 

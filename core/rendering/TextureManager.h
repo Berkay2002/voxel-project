@@ -1,6 +1,6 @@
 #pragma once
 
-#include "graphics/TextureArray.h"
+#include "../graphics/TextureArray.h"
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -9,24 +9,26 @@
 namespace Core {
 
 /**
- * TextureRegistry manages texture name to layer index mapping for the texture array.
+ * TextureManager manages texture name to layer index mapping for the texture array.
  * It provides a centralized way to load textures and look up layer indices by name.
  * 
+ * Renamed from TextureRegistry to match AAA engine conventions.
+ * 
  * Usage:
- *   TextureRegistry& registry = TextureRegistry::Instance();
- *   registry.LoadTextures({"grass_block_top", "dirt", "stone"}, "assets/textures/blocks/");
- *   int layer = registry.GetLayerIndex("dirt"); // Returns 1
+ *   TextureManager& manager = TextureManager::Instance();
+ *   manager.LoadTextures({"grass_block_top", "dirt", "stone"}, "assets/textures/blocks/");
+ *   int layer = manager.GetLayerIndex("dirt"); // Returns 1
  */
-class TextureRegistry {
+class TextureManager {
 public:
     // Singleton access
-    static TextureRegistry& Instance();
+    static TextureManager& Instance();
 
     // Delete copy/move for singleton
-    TextureRegistry(const TextureRegistry&) = delete;
-    TextureRegistry& operator=(const TextureRegistry&) = delete;
-    TextureRegistry(TextureRegistry&&) = delete;
-    TextureRegistry& operator=(TextureRegistry&&) = delete;
+    TextureManager(const TextureManager&) = delete;
+    TextureManager& operator=(const TextureManager&) = delete;
+    TextureManager(TextureManager&&) = delete;
+    TextureManager& operator=(TextureManager&&) = delete;
 
     /**
      * Load textures from a list of texture names.
@@ -72,11 +74,14 @@ public:
     void Clear();
 
 private:
-    TextureRegistry() = default;
-    ~TextureRegistry() = default;
+    TextureManager() = default;
+    ~TextureManager() = default;
 
     std::unordered_map<std::string, int> m_NameToLayer;
     std::unique_ptr<TextureArray> m_TextureArray;
 };
+
+// Backwards compatibility alias (can be removed later)
+using TextureRegistry = TextureManager;
 
 } // namespace Core

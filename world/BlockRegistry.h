@@ -7,7 +7,8 @@
 #include <glm/glm.hpp>
 
 namespace Core {
-    class TextureRegistry;
+    class TextureManager;
+    using TextureRegistry = TextureManager;  // Backwards compatibility
 }
 
 namespace Voxel {

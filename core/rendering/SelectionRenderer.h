@@ -7,19 +7,21 @@ namespace Core {
 class Shader;
 
 /**
- * BlockOutline - Renders a wireframe cube around a targeted block
+ * SelectionRenderer - Renders a wireframe cube around a targeted block
  * 
  * This renders a slightly scaled-up wireframe cube at the given block position
  * to provide visual feedback for which block the player is targeting.
+ * 
+ * Renamed from BlockOutline to match AAA engine conventions.
  */
-class BlockOutline {
+class SelectionRenderer {
 public:
-    BlockOutline();
-    ~BlockOutline();
+    SelectionRenderer();
+    ~SelectionRenderer();
 
     // Non-copyable
-    BlockOutline(const BlockOutline&) = delete;
-    BlockOutline& operator=(const BlockOutline&) = delete;
+    SelectionRenderer(const SelectionRenderer&) = delete;
+    SelectionRenderer& operator=(const SelectionRenderer&) = delete;
 
     // Initialize OpenGL resources (call once after context is created)
     void Setup();

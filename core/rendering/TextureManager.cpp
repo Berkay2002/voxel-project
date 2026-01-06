@@ -1,17 +1,17 @@
-#include "TextureRegistry.h"
-#include "Logger.h"
+#include "TextureManager.h"
+#include "../Logger.h"
 
 namespace Core {
 
-TextureRegistry& TextureRegistry::Instance() {
-    static TextureRegistry instance;
+TextureManager& TextureManager::Instance() {
+    static TextureManager instance;
     return instance;
 }
 
-bool TextureRegistry::LoadTextures(const std::vector<std::string>& textureNames,
+bool TextureManager::LoadTextures(const std::vector<std::string>& textureNames,
                                    const std::string& directory) {
     if (textureNames.empty()) {
-        LogError("TextureRegistry: No texture names provided");
+        LogError("TextureManager: No texture names provided");
         return false;
     }
 
@@ -31,32 +31,32 @@ bool TextureRegistry::LoadTextures(const std::vector<std::string>& textureNames,
     m_TextureArray = std::make_unique<TextureArray>(paths);
 
     if (!m_TextureArray->IsValid()) {
-        LogError("TextureRegistry: Failed to create texture array");
+        LogError("TextureManager: Failed to create texture array");
         m_NameToLayer.clear();
         m_TextureArray.reset();
         return false;
     }
 
-    LogInfo("TextureRegistry: Loaded " + std::to_string(m_NameToLayer.size()) + " textures");
+    LogInfo("TextureManager: Loaded " + std::to_string(m_NameToLayer.size()) + " textures");
     return true;
 }
 
-int TextureRegistry::GetLayerIndex(const std::string& textureName) const {
+int TextureManager::GetLayerIndex(const std::string& textureName) const {
     auto it = m_NameToLayer.find(textureName);
     if (it != m_NameToLayer.end()) {
         return it->second;
     }
     
     // Log warning for missing textures (helps debug block config issues)
-    LogWarn("TextureRegistry: Texture not found: " + textureName);
+    LogWarn("TextureManager: Texture not found: " + textureName);
     return -1;
 }
 
-bool TextureRegistry::HasTexture(const std::string& textureName) const {
+bool TextureManager::HasTexture(const std::string& textureName) const {
     return m_NameToLayer.find(textureName) != m_NameToLayer.end();
 }
 
-void TextureRegistry::Clear() {
+void TextureManager::Clear() {
     m_NameToLayer.clear();
     m_TextureArray.reset();
 }

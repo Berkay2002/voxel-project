@@ -12,7 +12,7 @@ class Shader;
 class Texture;
 class TextureArray;
 class Camera;
-class BlockOutline;
+class SelectionRenderer;
 class ShadowMap;
 class SSAO;
 class SkyRenderer;
@@ -103,8 +103,8 @@ private:
   Voxel::BlockID m_SelectedBlockType =
       3; // Block type to place (Stone by default)
 
-  // Block outline rendering
-  std::unique_ptr<BlockOutline> m_BlockOutline;
+  // Block selection rendering (wireframe outline)
+  std::unique_ptr<SelectionRenderer> m_SelectionRenderer;
 
   // UI rendering (crosshair)
   unsigned int m_CrosshairVAO = 0;

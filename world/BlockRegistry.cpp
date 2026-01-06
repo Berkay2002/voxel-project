@@ -1,5 +1,5 @@
 #include "BlockRegistry.h"
-#include "core/TextureRegistry.h"
+#include "core/rendering/TextureManager.h"
 #include "core/Logger.h"
 
 #include <nlohmann/json.hpp>

@@ -1,17 +1,17 @@
-#include "BlockOutline.h"
-#include "graphics/Shader.h"
-#include "Logger.h"
+#include "SelectionRenderer.h"
+#include "../graphics/Shader.h"
+#include "../Logger.h"
 #include <glad/gl.h>
 
 namespace Core {
 
-BlockOutline::BlockOutline() = default;
+SelectionRenderer::SelectionRenderer() = default;
 
-BlockOutline::~BlockOutline() {
+SelectionRenderer::~SelectionRenderer() {
     Cleanup();
 }
 
-void BlockOutline::Setup() {
+void SelectionRenderer::Setup() {
     // Define the 12 edges of a unit cube as line segments
     // Each edge is 2 vertices, so 24 vertices total for GL_LINES
     // Cube spans from (0,0,0) to (1,1,1) to match block coordinates
@@ -51,10 +51,10 @@ void BlockOutline::Setup() {
     
     glBindVertexArray(0);
     
-    LOG_INFO("BlockOutline initialized with " + std::to_string(m_VertexCount) + " vertices");
+    LOG_INFO("SelectionRenderer initialized with " + std::to_string(m_VertexCount) + " vertices");
 }
 
-void BlockOutline::Render(const glm::ivec3& blockPos, Shader& shader, const glm::mat4& viewProj) {
+void SelectionRenderer::Render(const glm::ivec3& blockPos, Shader& shader, const glm::mat4& viewProj) {
     if (m_VAO == 0) {
         return;  // Not initialized
     }
@@ -89,7 +89,7 @@ void BlockOutline::Render(const glm::ivec3& blockPos, Shader& shader, const glm:
     shader.Unbind();
 }
 
-void BlockOutline::Cleanup() {
+void SelectionRenderer::Cleanup() {
     if (m_VAO != 0) {
         glDeleteVertexArrays(1, &m_VAO);
         m_VAO = 0;

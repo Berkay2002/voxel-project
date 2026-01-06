@@ -101,10 +101,10 @@ add_executable(${PROJECT_NAME}
     core/graphics/TextureArray.cpp
     core/Camera.cpp
     core/Frustum.cpp
-    core/BlockOutline.cpp
-    core/ShadowMap.cpp
-    core/SSAO.cpp
-    core/TextureRegistry.cpp
+    core/rendering/SelectionRenderer.cpp
+    core/rendering/ShadowMap.cpp
+    core/rendering/SSAO.cpp
+    core/rendering/TextureManager.cpp
     core/DisplayConfig.cpp
     core/RenderConfig.cpp
     core/SkyRenderer.cpp

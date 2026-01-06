@@ -1,5 +1,5 @@
 #include "ShadowMap.h"
-#include "Logger.h"
+#include "../Logger.h"
 #include <glad/gl.h>
 #include <string>
 
