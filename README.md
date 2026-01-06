@@ -6,6 +6,8 @@
 
 **A high-performance C++20 Voxel Game Engine built from scratch.**
 
+![Build Status](https://github.com/Berkay2002/voxel-project/actions/workflows/tests.yml/badge.svg)
+
 </div>
 
 ## Overview
@@ -99,6 +101,32 @@ cmake --build build -j$(nproc)
 ```bash
 ./build/VoxelEngine
 ```
+
+## Testing
+
+The project includes automated unit tests using Google Test. Tests cover core components like:
+- Ray calculations and transformations
+- Chunk block storage and retrieval
+- Heightmap generation
+- Block registry and configuration loading
+- Voxel raycasting (DDA algorithm)
+
+### Running Tests
+
+```bash
+# Build tests
+cmake --build build --target VoxelTests
+
+# Run all tests
+./build/tests/VoxelTests
+
+# Run with verbose output
+./build/tests/VoxelTests --gtest_filter=* --gtest_color=yes
+```
+
+### Continuous Integration
+
+Tests are automatically run on every push and pull request via GitHub Actions. Check the build status badge at the top of this README for the current test status.
 
 ## Controls
 

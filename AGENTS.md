@@ -14,7 +14,7 @@ The `.agent` directory serves as the persistent "brain" and memory for AI agents
 **Rule for Implementation**: During and after implementation phases:
 
 1. Update `.agent/task.md` with progress (`[ ]` → `[/]` → `[x]`)
-2. Update `GEMINI.md` Project Status when phases complete
+2. Update `GEMINI.md`/`AGENTS.md` Project Status when phases complete
 3. Keep implementation plans in `.agent/plans/` for reference
 
 ## Project Overview

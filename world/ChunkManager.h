@@ -117,6 +117,9 @@ private:
     // Const version of GetChunk for raycasting
     const Chunk* GetChunkConst(int chunkX, int chunkZ) const;
 
+    // Ensure a chunk exists for direct edits (used by unit tests and manual placement)
+    Chunk* GetOrCreateChunk(int chunkX, int chunkZ);
+
     // Visible chunk cache (pre-computed per frame, reused across render passes)
     std::vector<VisibleChunk> m_VisibleChunks;
 
