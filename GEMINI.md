@@ -36,10 +36,12 @@ The `.agent` directory serves as the persistent "brain" and memory for AI agents
 ### Windows (Visual Studio)
 
 **Prerequisites:**
+
 - Visual Studio 2022 (with C++ Desktop Development workload)
 - CMake 3.28+ (usually bundled with VS, or install separately)
 
 **Build Steps:**
+
 ```powershell
 # Configure (generates Visual Studio solution)
 cmake -B build -S .
@@ -54,11 +56,13 @@ cmake --build build --config Release
 ### Linux
 
 **Prerequisites:**
+
 - GCC 11+ or Clang 14+ (C++20 support)
 - CMake 3.28+
 - OpenGL development libraries: `sudo apt install libgl1-mesa-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev`
 
 **Build Steps:**
+
 ```bash
 # Configure
 cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
@@ -72,8 +76,15 @@ cmake --build build -j$(nproc)
 
 ## Architecture & Considerations
 
-- **Modular Core**: The engine (`core/`) must be decoupled from the game logic (`world/`).
-- **Centralized Config**: All tunable world parameters are in `world/WorldConfig.h`.
+- **Modular Core**: The engine (`core/`) is organized into subdirectories:
+  - `core/Application` - Main application loop (formerly Engine)
+  - `core/graphics/` - Shader, Texture, TextureArray, VertexArray, VertexBuffer, IndexBuffer
+  - `core/rendering/` - ShadowMap, SSAO, SelectionRenderer, TextureManager
+  - `core/scene/` - Camera, Frustum, Ray
+  - `core/atmosphere/` - SkySystem (clouds, celestials, weather)
+  - `core/window/` - Window management
+  - `core/settings/` - VideoSettings, GraphicsSettings
+- **Centralized Config**: Tunable world parameters in `world/WorldConfig.h`, game config in `world/GameConfig.h`
 - **Voxel Data**: Chunks are 16x16x256, stored as 1D/3D arrays.
 - **Optimization**:
   - Aggressive Face Culling (never render internal faces).
@@ -88,7 +99,7 @@ _Refer to `.agent/architecture_reference.md` for the full architectural breakdow
 
 - **Phase 1**: ✅ Complete (2026-01-03)
   - CMake build system with FetchContent (GLFW 3.4, GLAD, GLM 1.0.1)
-  - Core engine loop: `Window`, `Engine`, `Logger`
+  - Core engine loop: `Window`, `Application`, `Logger`
   - OpenGL 4.6 context verified (tested on RTX 3090)
 - **Phase 2**: ✅ Complete (2026-01-03)
   - Shader system with uniform setters
@@ -174,6 +185,16 @@ _Refer to `.agent/architecture_reference.md` for the full architectural breakdow
   - Day/night cycle (20-min, Minecraft default)
   - Dynamic sky color and lighting
   - Rain/snow weather particles (K key toggle)
-  - SkyRenderer class with modular subsystems
+  - SkySystem class with modular subsystems
 - **Phase 13C**: 🔜 Backlog (Greedy Meshing LOD)
   - Reduced vertex count for distant chunks
+
+### Core Refactoring (2026-01-06)
+
+- **Phase R1**: ✅ Complete - File Organization
+  - Organized `core/` into subdirectories: graphics/, rendering/, scene/, atmosphere/, window/, settings/
+- **Phase R2**: ✅ Complete - Class Renaming
+  - Engine → Application, SkyRenderer → SkySystem
+  - DisplayConfig → VideoSettings, RenderConfig → GraphicsSettings
+- **Phase R3**: ✅ Complete - Naming Conventions
+  - Applied Unreal-style `m_b` prefix to boolean members
