@@ -60,8 +60,20 @@ bool BlockRegistry::LoadFromFile(const std::string& path, Core::TextureRegistry&
     }
 
     for (const auto& blockJson : root["blocks"]) {
-        // Skip air - already added
-        std::string stringId = blockJson.value("id", "");
+        // Resolve string identifier (stringId preferred, fall back to id which may be string or number)
+        std::string stringId;
+        if (blockJson.contains("stringId") && blockJson["stringId"].is_string()) {
+            stringId = blockJson["stringId"].get<std::string>();
+        } else if (blockJson.contains("id")) {
+            const auto& idField = blockJson["id"];
+            if (idField.is_string()) {
+                stringId = idField.get<std::string>();
+            } else if (idField.is_number_integer()) {
+                stringId = std::to_string(idField.get<int>());
+            }
+        }
+
+        // Skip invalid or duplicate air entries (air already injected at index 0)
         if (stringId.empty() || stringId == "air") {
             continue;
         }
@@ -70,33 +82,62 @@ bool BlockRegistry::LoadFromFile(const std::string& path, Core::TextureRegistry&
         def.id = static_cast<BlockID>(m_Blocks.size());
         def.stringId = stringId;
 
-        // Parse properties
-        if (blockJson.contains("properties")) {
-            const auto& props = blockJson["properties"];
-            def.solid = props.value("solid", true);
-            def.opaque = props.value("opaque", true);
-            def.transparent = props.value("transparent", false);
-            def.tinted = props.value("tinted", false);
-            def.tintTop = props.value("tintTop", def.tinted);
-            def.tintSides = props.value("tintSides", false);
-            
-            // Parse tint color if specified
-            if (props.contains("tintColor") && props["tintColor"].is_array()) {
-                auto arr = props["tintColor"];
-                if (arr.size() >= 3) {
-                    def.tintColor = glm::vec3(
-                        arr[0].get<float>(),
-                        arr[1].get<float>(),
-                        arr[2].get<float>()
-                    );
+        // Helpers to support both top-level and nested property blocks
+        auto getBoolProp = [&](const char* key, bool defaultVal) {
+            if (blockJson.contains(key) && blockJson[key].is_boolean()) {
+                return blockJson[key].get<bool>();
+            }
+            if (blockJson.contains("properties")) {
+                const auto& props = blockJson["properties"];
+                if (props.contains(key) && props[key].is_boolean()) {
+                    return props[key].get<bool>();
                 }
             }
+            return defaultVal;
+        };
+
+        auto applyTint = [&](glm::vec3& tint) {
+            bool found = false;
+            const nlohmann::json* tintArray = nullptr;
+            if (blockJson.contains("tintColor") && blockJson["tintColor"].is_array()) {
+                tintArray = &blockJson["tintColor"];
+            } else if (blockJson.contains("properties")) {
+                const auto& props = blockJson["properties"];
+                if (props.contains("tintColor") && props["tintColor"].is_array()) {
+                    tintArray = &props["tintColor"];
+                }
+            }
+
+            if (tintArray && tintArray->size() >= 3) {
+                tint = glm::vec3(
+                    (*tintArray)[0].get<float>(),
+                    (*tintArray)[1].get<float>(),
+                    (*tintArray)[2].get<float>()
+                );
+                found = true;
+            }
+            return found;
+        };
+
+        // Parse properties with fallbacks
+        def.solid = getBoolProp("solid", def.solid);
+        def.opaque = getBoolProp("opaque", def.opaque);
+        def.transparent = getBoolProp("transparent", def.transparent);
+        def.tinted = getBoolProp("tinted", def.tinted);
+        def.tintTop = getBoolProp("tintTop", def.tinted);
+        def.tintSides = getBoolProp("tintSides", def.tintSides);
+        bool tintSpecified = applyTint(def.tintColor);
+        if (tintSpecified && !def.tinted) {
+            // If a tint color is provided without explicit flags, tint all faces by default
+            def.tinted = true;
+            def.tintTop = true;
+            def.tintSides = true;
         }
 
         // Parse textures
         if (blockJson.contains("textures")) {
             const auto& textures = blockJson["textures"];
-            
+
             // Check for "all" shorthand first
             if (textures.contains("all")) {
                 std::string texName = textures["all"].get<std::string>();
@@ -112,7 +153,7 @@ bool BlockRegistry::LoadFromFile(const std::string& path, Core::TextureRegistry&
                 def.textureEast = layerIndex;
                 def.textureWest = layerIndex;
             }
-            
+
             // Override with specific faces
             auto resolveTexture = [&](const std::string& key) -> int {
                 if (textures.contains(key)) {
@@ -122,7 +163,7 @@ bool BlockRegistry::LoadFromFile(const std::string& path, Core::TextureRegistry&
                 }
                 return -1; // Not specified
             };
-            
+
             int top = resolveTexture("top");
             int bottom = resolveTexture("bottom");
             int sides = resolveTexture("sides");
@@ -130,10 +171,10 @@ bool BlockRegistry::LoadFromFile(const std::string& path, Core::TextureRegistry&
             int south = resolveTexture("south");
             int east = resolveTexture("east");
             int west = resolveTexture("west");
-            
+
             if (top >= 0) def.textureTop = top;
             if (bottom >= 0) def.textureBottom = bottom;
-            
+
             // "sides" applies to all 4 horizontal faces
             if (sides >= 0) {
                 def.textureNorth = sides;
@@ -141,7 +182,7 @@ bool BlockRegistry::LoadFromFile(const std::string& path, Core::TextureRegistry&
                 def.textureEast = sides;
                 def.textureWest = sides;
             }
-            
+
             // Individual face overrides
             if (north >= 0) def.textureNorth = north;
             if (south >= 0) def.textureSouth = south;
@@ -184,6 +225,10 @@ bool BlockRegistry::IsOpaque(BlockID id) const {
 }
 
 bool BlockRegistry::IsSolid(BlockID id) const {
+    // Fallback for cases where registry has not been loaded (e.g., unit tests)
+    if (m_Blocks.empty()) {
+        return id != BLOCK_AIR;
+    }
     return GetBlockDef(id).solid;
 }
 
@@ -194,6 +239,7 @@ bool BlockRegistry::IsTransparent(BlockID id) const {
 void BlockRegistry::Clear() {
     m_Blocks.clear();
     m_StringToId.clear();
+    InitializeAirBlock();
 }
 
 glm::vec3 BlockRegistry::GetTintColor(BlockID id, Face face) const {

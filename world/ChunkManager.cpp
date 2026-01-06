@@ -167,6 +167,21 @@ Chunk* ChunkManager::GetChunk(int chunkX, int chunkZ) {
     return nullptr;
 }
 
+Chunk* ChunkManager::GetOrCreateChunk(int chunkX, int chunkZ) {
+    if (Chunk* existing = GetChunk(chunkX, chunkZ)) {
+        return existing;
+    }
+
+    auto chunk = std::make_unique<Chunk>();
+    chunk->SetPosition(chunkX, chunkZ);
+    chunk->SetState(ChunkState::Ready);
+    chunk->RebuildHeightmap();
+
+    Chunk* rawPtr = chunk.get();
+    m_Chunks[{chunkX, chunkZ}] = std::move(chunk);
+    return rawPtr;
+}
+
 void ChunkManager::RenderAll(Core::Shader& shader, Core::Camera& camera, float aspectRatio) {
     shader.Bind();
     
@@ -324,10 +339,7 @@ void ChunkManager::SetBlock(int worldX, int worldY, int worldZ, BlockID block) {
     int localZ = worldZ - chunkZ * CHUNK_DEPTH;
     
     // Find chunk
-    Chunk* chunk = GetChunk(chunkX, chunkZ);
-    if (!chunk) {
-        return;
-    }
+    Chunk* chunk = GetOrCreateChunk(chunkX, chunkZ);
     
     // Set block in chunk (convert BlockID to BlockType)
     chunk->SetBlock(localX, worldY, localZ, static_cast<BlockType>(block));
