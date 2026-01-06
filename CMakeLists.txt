@@ -99,8 +99,8 @@ add_executable(${PROJECT_NAME}
     core/graphics/VertexArray.cpp
     core/graphics/Texture.cpp
     core/graphics/TextureArray.cpp
-    core/Camera.cpp
-    core/Frustum.cpp
+    core/scene/Camera.cpp
+    core/scene/Frustum.cpp
     core/rendering/SelectionRenderer.cpp
     core/rendering/ShadowMap.cpp
     core/rendering/SSAO.cpp

@@ -1,6 +1,6 @@
 #include "core/SkyRenderer.h"
 #include "world/WorldConfig.h"
-#include "core/Camera.h"
+#include "core/scene/Camera.h"
 #include "core/Logger.h"
 #include "core/graphics/Shader.h"
 #include "core/graphics/Texture.h"

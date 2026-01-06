@@ -1,6 +1,6 @@
 #include "core/Engine.h"
 #include "core/rendering/SelectionRenderer.h"
-#include "core/Camera.h"
+#include "core/scene/Camera.h"
 #include "core/Logger.h"
 #include "core/rendering/SSAO.h"
 #include "core/graphics/Shader.h"

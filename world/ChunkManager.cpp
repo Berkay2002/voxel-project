@@ -1,8 +1,8 @@
 #include "ChunkManager.h"
 #include "SpaghettiCaveCarver.h"
 #include "core/graphics/Shader.h"
-#include "core/Camera.h"
-#include "core/Frustum.h"
+#include "core/scene/Camera.h"
+#include "core/scene/Frustum.h"
 #include "core/Logger.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>

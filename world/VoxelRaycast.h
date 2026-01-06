@@ -1,7 +1,7 @@
 #pragma once
 
 #include "BlockRegistry.h"
-#include "core/Ray.h"
+#include "core/scene/Ray.h"
 #include <glm/glm.hpp>
 
 namespace Voxel {
