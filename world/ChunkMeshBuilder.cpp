@@ -4,10 +4,12 @@ namespace Voxel {
 
 ChunkMeshResult ChunkMeshBuilder::BuildMesh(const Chunk& chunk) {
     ChunkMeshResult result;
-    result.opaqueMesh.vertices.reserve(CHUNK_VOLUME * 4);  // Rough estimate
-    result.opaqueMesh.indices.reserve(CHUNK_VOLUME * 6);
-    result.waterMesh.vertices.reserve(CHUNK_VOLUME);  // Water is typically less common
-    result.waterMesh.indices.reserve(CHUNK_VOLUME);
+    // Reserve conservative estimates to reduce reallocations
+    // A fully generated chunk might have ~24k faces, but with culling it's usually ~3-5k
+    result.opaqueMesh.vertices.reserve(4000 * 4);  // 4 vertices per face
+    result.opaqueMesh.indices.reserve(4000 * 6);   // 6 indices per face
+    result.waterMesh.vertices.reserve(500 * 4);    // Water is less common
+    result.waterMesh.indices.reserve(500 * 6);
 
     // Compute heightmap for sky light calculation (once per chunk)
     ComputeHeightMap(chunk);
