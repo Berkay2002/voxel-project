@@ -186,6 +186,8 @@ constexpr float RAIN_PARTICLE_SIZE  = 0.3f;    // Width of rain streak
 constexpr float RAIN_SPEED          = 25.0f;   // Fall speed (blocks/sec)
 constexpr int   RAIN_DENSITY        = 1500;    // Number of particles
 constexpr float SNOW_SPEED          = 3.0f;    // Slower than rain
+constexpr float WEATHER_RADIUS      = 32.0f;   // Particle spawn radius around player
+constexpr float WEATHER_SPAWN_HEIGHT = 64.0f;  // Blocks above terrain to spawn particles
 
 // =============================================================================
 // SSAO (Screen-Space Ambient Occlusion)

@@ -188,15 +188,27 @@ void SkySystem::RenderWeather(const Camera& camera, float aspectRatio, Voxel::Ch
     m_WeatherShader->SetFloat("u_ParticleWidth", particleWidth);
     
     // Pass heightmap information to shader (if available)
-    // We'll sample the heightmap at camera position as a baseline
+    // Sample heightmap around camera to get a representative terrain height
+    // This prevents weather from appearing in caves/under roofs
     float terrainHeightAtCamera = 64.0f;  // Default height
     if (chunkManager) {
-        int heightSample = chunkManager->GetHeightAt(
-            static_cast<int>(std::floor(cameraPos.x)),
-            static_cast<int>(std::floor(cameraPos.z))
-        );
-        if (heightSample >= 0) {
-            terrainHeightAtCamera = static_cast<float>(heightSample);
+        int camX = static_cast<int>(std::floor(cameraPos.x));
+        int camZ = static_cast<int>(std::floor(cameraPos.z));
+        
+        // Sample a 3x3 grid around camera and use the maximum height
+        // This prevents particles from rendering through nearby walls/cliffs
+        int maxHeight = -1;
+        for (int dz = -1; dz <= 1; dz++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                int height = chunkManager->GetHeightAt(camX + dx, camZ + dz);
+                if (height > maxHeight) {
+                    maxHeight = height;
+                }
+            }
+        }
+        
+        if (maxHeight >= 0) {
+            terrainHeightAtCamera = static_cast<float>(maxHeight);
         }
     }
     m_WeatherShader->SetFloat("u_TerrainHeight", terrainHeightAtCamera);
