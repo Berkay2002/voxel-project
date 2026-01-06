@@ -189,14 +189,6 @@ void ChunkManager::RenderAll(Core::Shader& shader, Core::Camera& camera, float a
     }
     
     shader.Unbind();
-    
-    // Debug logging (can be toggled off in production)
-    static int frameCounter = 0;
-    if (++frameCounter >= 60) {
-        LOG_DEBUG("Frustum culling: rendered " + std::to_string(m_VisibleChunks.size()) + 
-                  " chunks, culled " + std::to_string(m_Chunks.size() - m_VisibleChunks.size()));
-        frameCounter = 0;
-    }
 }
 
 void ChunkManager::RenderWater(Core::Shader& waterShader, Core::Camera& camera, float aspectRatio) {

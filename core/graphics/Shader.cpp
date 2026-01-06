@@ -45,7 +45,8 @@ Shader::~Shader() {
   }
 }
 
-Shader::Shader(Shader &&other) noexcept : m_ID(other.m_ID) {
+Shader::Shader(Shader &&other) noexcept 
+  : m_ID(other.m_ID), m_UniformLocationCache(std::move(other.m_UniformLocationCache)) {
   other.m_ID = 0;
 }
 
@@ -55,6 +56,7 @@ Shader &Shader::operator=(Shader &&other) noexcept {
       glDeleteProgram(m_ID);
     }
     m_ID = other.m_ID;
+    m_UniformLocationCache = std::move(other.m_UniformLocationCache);
     other.m_ID = 0;
   }
   return *this;
@@ -68,31 +70,31 @@ void Shader::Unbind() const {
   glUseProgram(0);
 }
 
-void Shader::SetInt(const std::string &name, int value) const {
+void Shader::SetInt(const std::string &name, int value) {
   glUniform1i(GetUniformLocation(name), value);
 }
 
-void Shader::SetBool(const std::string &name, bool value) const {
+void Shader::SetBool(const std::string &name, bool value) {
   glUniform1i(GetUniformLocation(name), value ? 1 : 0);
 }
 
-void Shader::SetFloat(const std::string &name, float value) const {
+void Shader::SetFloat(const std::string &name, float value) {
   glUniform1f(GetUniformLocation(name), value);
 }
 
-void Shader::SetVec2(const std::string &name, const glm::vec2 &value) const {
+void Shader::SetVec2(const std::string &name, const glm::vec2 &value) {
   glUniform2fv(GetUniformLocation(name), 1, glm::value_ptr(value));
 }
 
-void Shader::SetVec3(const std::string &name, const glm::vec3 &value) const {
+void Shader::SetVec3(const std::string &name, const glm::vec3 &value) {
   glUniform3fv(GetUniformLocation(name), 1, glm::value_ptr(value));
 }
 
-void Shader::SetVec4(const std::string &name, const glm::vec4 &value) const {
+void Shader::SetVec4(const std::string &name, const glm::vec4 &value) {
   glUniform4fv(GetUniformLocation(name), 1, glm::value_ptr(value));
 }
 
-void Shader::SetMat4(const std::string &name, const glm::mat4 &value) const {
+void Shader::SetMat4(const std::string &name, const glm::mat4 &value) {
   glUniformMatrix4fv(GetUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value));
 }
 
@@ -147,11 +149,20 @@ unsigned int Shader::CreateProgram(unsigned int vertexShader, unsigned int fragm
   return program;
 }
 
-int Shader::GetUniformLocation(const std::string &name) const {
+int Shader::GetUniformLocation(const std::string &name) {
+  // Check cache first
+  auto it = m_UniformLocationCache.find(name);
+  if (it != m_UniformLocationCache.end()) {
+    return it->second;
+  }
+  
+  // Not in cache - query OpenGL and cache result
   int location = glGetUniformLocation(m_ID, name.c_str());
   if (location == -1) {
     LogWarn("Uniform '" + name + "' not found in shader");
   }
+  
+  m_UniformLocationCache[name] = location;
   return location;
 }
 
