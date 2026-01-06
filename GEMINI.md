@@ -205,3 +205,17 @@ _Refer to `.agent/architecture_reference.md` for the full architectural breakdow
   - SSAO uniform location caching (no per-frame string allocs)
   - Pre-computed chunk model matrices across 4 render passes
   - SSAO kernel UBO (single buffer bind instead of 64 uniforms)
+
+### Weather System Improvements (2026-01-06)
+
+- **Phase 18**: ✅ Complete - Heightmap-Based Weather Occlusion
+  - Minecraft-style heightmap system (16×16 per chunk)
+  - Per-chunk heightmap tracking (highest solid block per column)
+  - ChunkManager heightmap queries for weather occlusion
+  - 3×3 grid sampling around player for robust occlusion
+  - Weather shader spawns particles above terrain height
+  - Smooth fade-out as particles approach ground (3-0.5 blocks)
+  - Automatic culling of underground/cave particles
+  - No weather rendering when player is indoors/underground
+  - Centralized weather configuration in WorldConfig.h
+  - Comprehensive testing guide (WEATHER_TESTING.md)
