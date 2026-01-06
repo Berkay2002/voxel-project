@@ -729,7 +729,7 @@ void Application::Render() {
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
       glDepthMask(GL_FALSE);
 
-      m_SkySystem->RenderWeather(*m_Camera, aspectRatio);
+      m_SkySystem->RenderWeather(*m_Camera, aspectRatio, m_ChunkManager.get());
 
       glDepthMask(GL_TRUE);
       glDisable(GL_BLEND);

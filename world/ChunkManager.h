@@ -88,6 +88,10 @@ public:
     // Does nothing if position is out of bounds or chunk not loaded
     void SetBlock(int worldX, int worldY, int worldZ, BlockID block);
 
+    // Get the highest solid block Y coordinate at world XZ position (for weather)
+    // Returns -1 if no solid blocks in column or chunk not loaded
+    int GetHeightAt(int worldX, int worldZ) const;
+
 private:
     // Convert world position to chunk coordinates
     ChunkCoord WorldToChunkCoord(const glm::vec3& worldPos) const;

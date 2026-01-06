@@ -483,4 +483,31 @@ void Chunk::RenderWater() const {
     glBindVertexArray(0);
 }
 
+int Chunk::GetHeightAt(int x, int z) const {
+    if (x < 0 || x >= CHUNK_WIDTH || z < 0 || z >= CHUNK_DEPTH) {
+        return -1;
+    }
+    return m_Heightmap[z * CHUNK_WIDTH + x];
+}
+
+void Chunk::RebuildHeightmap() {
+    // Initialize all heights to -1 (no blocks)
+    m_Heightmap.fill(-1);
+    
+    // For each XZ column, find the highest solid (non-air, non-water) block
+    for (int z = 0; z < CHUNK_DEPTH; z++) {
+        for (int x = 0; x < CHUNK_WIDTH; x++) {
+            // Scan from top to bottom
+            for (int y = CHUNK_HEIGHT - 1; y >= 0; y--) {
+                BlockType block = GetBlock(x, y, z);
+                // Treat air and water as transparent for weather purposes
+                if (block != BlockType::Air && block != BlockType::Water) {
+                    m_Heightmap[z * CHUNK_WIDTH + x] = y;
+                    break;
+                }
+            }
+        }
+    }
+}
+
 } // namespace Voxel

@@ -1,5 +1,6 @@
 #include "SkySystem.h"
 #include "world/WorldConfig.h"
+#include "world/ChunkManager.h"
 #include "core/scene/Camera.h"
 #include "core/Logger.h"
 #include "core/graphics/Shader.h"
@@ -139,7 +140,7 @@ void SkySystem::Render(const Camera& camera, float aspectRatio) {
     }
 }
 
-void SkySystem::RenderWeather(const Camera& camera, float aspectRatio) {
+void SkySystem::RenderWeather(const Camera& camera, float aspectRatio, Voxel::ChunkManager* chunkManager) {
     if (!m_bWeatherEnabled || !m_WeatherShader || !m_WeatherShader->IsValid()) {
         return;
     }
@@ -175,15 +176,42 @@ void SkySystem::RenderWeather(const Camera& camera, float aspectRatio) {
     glm::mat4 viewProj = proj * view;
     
     glm::vec3 cameraRight = glm::normalize(glm::vec3(view[0][0], view[1][0], view[2][0]));
+    glm::vec3 cameraPos = camera.GetPosition();
     
     m_WeatherShader->Bind();
     m_WeatherShader->SetMat4("u_ViewProj", viewProj);
-    m_WeatherShader->SetVec3("u_CameraPos", camera.GetPosition());
+    m_WeatherShader->SetVec3("u_CameraPos", cameraPos);
     m_WeatherShader->SetVec3("u_CameraRight", cameraRight);
     m_WeatherShader->SetFloat("u_Time", static_cast<float>(glfwGetTime()));
     m_WeatherShader->SetFloat("u_FallSpeed", fallSpeed);
     m_WeatherShader->SetFloat("u_ParticleHeight", particleHeight);
     m_WeatherShader->SetFloat("u_ParticleWidth", particleWidth);
+    
+    // Pass heightmap information to shader (if available)
+    // Sample heightmap around camera to get a representative terrain height
+    // This prevents weather from appearing in caves/under roofs
+    float terrainHeightAtCamera = 64.0f;  // Default height
+    if (chunkManager) {
+        int camX = static_cast<int>(std::floor(cameraPos.x));
+        int camZ = static_cast<int>(std::floor(cameraPos.z));
+        
+        // Sample a 3x3 grid around camera and use the maximum height
+        // This prevents particles from rendering through nearby walls/cliffs
+        int maxHeight = -1;
+        for (int dz = -1; dz <= 1; dz++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                int height = chunkManager->GetHeightAt(camX + dx, camZ + dz);
+                if (height > maxHeight) {
+                    maxHeight = height;
+                }
+            }
+        }
+        
+        if (maxHeight >= 0) {
+            terrainHeightAtCamera = static_cast<float>(maxHeight);
+        }
+    }
+    m_WeatherShader->SetFloat("u_TerrainHeight", terrainHeightAtCamera);
     
     texture->Bind(0);
     m_WeatherShader->SetInt("u_Texture", 0);
